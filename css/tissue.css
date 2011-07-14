@@ -1,0 +1,19 @@
+html, body {
+    font-family: Lucida, sans-serif;
+    font-size: 90%;
+    margin: 0px 10px;
+    padding: 0px;
+}
+
+.internal_link {
+    stroke: black;
+    stroke-width: 2;
+}
+
+.node_input {
+    fill: green;
+}
+
+.node_output {
+    fill: red;
+}
