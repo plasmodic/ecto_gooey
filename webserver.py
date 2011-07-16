@@ -43,7 +43,7 @@ class MyHandler(BaseHTTPRequestHandler):
             return
         else:
             try:
-                if self.path.endswith(".html") or self.path.endswith(".js"):
+                if self.path.endswith(".html") or self.path.endswith(".js") or self.path.endswith(".css"):
                     f = open(curdir + sep + self.path) #self.path has /test.html
     #note that this potentially makes every file on your computer readable by the internet
 

@@ -6,8 +6,8 @@ html, body {
 }
 
 .internal_link {
-    stroke: black;
-    stroke-width: 2;
+    stroke: none;
+    stroke-width: 2px;
 }
 
 .node_input {
@@ -16,4 +16,10 @@ html, body {
 
 .node_output {
     fill: red;
+}
+
+.node_center {
+    fill: white;
+    stroke: black;
+    stroke-width: 1px;
 }
