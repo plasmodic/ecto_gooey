@@ -19,6 +19,21 @@ function DebugObject(obj) {
   return(str);
 }
 
+$.fn.listHandlers = function(events, outputFunction) {
+    return this.each(function(i){
+        var elem = this,
+            dEvents = $(this).data('events');
+        if (!dEvents) {return;}
+        $.each(dEvents, function(name, handler){
+            if((new RegExp('^(' + (events === '*' ? '.+' : events.replace(',','|').replace(/^on/i,'')) + ')$' ,'i')).test(name)) {
+               $.each(handler, function(i,handler){
+                   outputFunction(elem, '\n' + i + ': [' + name + '] : ' + handler );
+               });
+           }
+        });
+    });
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -108,6 +123,50 @@ function Tissue() {
             .attr("cx", function(d) { return d.x; })
             .attr("cy", function(d) { return d.y; });
     });
+    
+    
+    // Make sure that when you hover the inputs/outputs, you show what they are
+    var current_tissue = this;
+    $('#tissue .node_input,.node_output').live('mouseover',
+        function () {
+            var index = parseInt($(this).attr('id').substring(5));
+            var node = current_tissue.nodes[index];
+            var x = node.x, y = node.y;
+
+            d3.select('#tissue .hovered_text').remove();
+            d3.select('#tissue').append("svg:text")
+                .text(node.name + ' : ' + node.type)
+                .attr("x",x)
+                .attr("y",y)
+                .attr('class', 'hovered_text');
+        });
+    $('#tissue .node_input').live('mouseout',
+        function () {
+            $('#tissue .hovered_text').fadeOut('slow');
+        });
+
+    // Create a line when you grab an input/output node
+    $('#tissue .node_input,.node_output').live('mousedown', function () {
+        var index = parseInt($(this).attr('id').substring(5));
+        var node = current_tissue.nodes[index];
+        var x = node.x, y = node.y;
+
+        d3.select('#tissue').append("svg:line")
+            .attr("x1",x)
+            .attr("y1",y)
+            .attr("x2",x)
+            .attr("y2",y)
+            .attr('class', 'current_link');
+    });
+
+    $('#tissue').live('mouseup', function () {
+        d3.select('#tissue .current_link').remove();
+    });
+
+    $('#tissue').mousemove(function (e) {
+        $('.current_link').attr("x2",e.clientX - parseInt($('#tissue').css('left')))
+                .attr("y2",e.clientY - parseInt($('#tissue').css('top')));
+    });
 };
 
 Tissue.prototype.addModule = function(module_name) {
@@ -128,8 +187,8 @@ Tissue.prototype.addModule = function(module_name) {
         .enter()//.append("g").attr("render-order", 1)
         .append("svg:circle", "circle.cursor")
         .attr("class", "node node_center")
-        .attr("r", 30)
-        .call(this.layout.drag);
+        .attr("r", 30);
+        //.call(this.layout.drag);
 
     // Add graphical nodes corresponding to the inputs
     $.each({'input': EctoModules[module_name].inputs, 'output': EctoModules[module_name].outputs}, function(type, elements) {
@@ -148,11 +207,11 @@ Tissue.prototype.addModule = function(module_name) {
             .attr("id", function(d) {
                 return "node_" + d.index;
             })
-            .attr("r", 5)
-            .call(current_tissue.layout.drag);
+            .attr("r", 5);
+            //.call(current_tissue.layout.drag);
     });
 
-    // Add the last link
+    // Insert the link
     d3.select('#tissue').selectAll("line.link")
         .data(this.links)
         .enter().insert("svg:line", "circle.node")
@@ -162,32 +221,10 @@ Tissue.prototype.addModule = function(module_name) {
         .attr("x2", function(d) { return d.target.x; })
         .attr("y2", function(d) { return d.target.y; });
 
-    $('#tissue .node').filter(function() {
-        var out = false
-        $.each($(this).attr('class').split(/\s+/), function(index, class_name) {
-            if (class_name == 'node_input' || class_name == 'node_output') {
-                out = true;
-                return false;
-            }
-        });
-        return out;
-    }).hover(
-        function () {
-            var index = parseInt($(this).attr('id').substring(5));
-            var node = current_tissue.nodes[index];
-            var x = node.x, y = node.y;
+     //$('*').listHandlers('*',console.info);
 
-            d3.select('#tissue .hovered_text').remove();
-            d3.select('#tissue').append("svg:text")
-                .text(node.type)
-                .attr("x",x)
-                .attr("y",y)
-                .attr('class', 'hovered_text');
-        },
-        function () {
-            $('#tissue .hovered_text').fadeOut('slow');
-        });
-        
+
+    // Start the graph optimization
     this.layout.start();
 }
 
