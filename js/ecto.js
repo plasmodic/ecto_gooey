@@ -43,6 +43,8 @@ function EscapeHtml(input) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/** A Module is an abstract class containing info about how an ecto module works
+ */
 function Module(raw_module) {
     // This is a string
     var current_module = this;
@@ -97,12 +99,35 @@ Module.prototype.toString = function() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/** A Node is one of the nodes in the graph
+ * name: if an input/output, the name of it
+ * type: 0 for center, 1 for input, -1 for output
+ * var_type: if an input/output, the C++ type (int, string ...)
+ * module_id: the id of the module that the node belongs to
+ */
+function Node(name,type,var_type,module_id) {
+    this.x = Math.random() * 600;
+    this.y = Math.random() * 400;
+    this.type = type;
+    this.var_type = var_type;
+    this.name = name;
+    this.id = Node.prototype.id;
+    ++Node.prototype.id;
+    this.module_id = module_id;
+};
+
+Node.prototype.id = 0;
+
+////////////////////////////////////////////////////////////////////////////////
+
 /** The class responsible for linking and displaying modules
  */ 
 function Tissue() {
     var width = d3.select('#tissue').attr('width'),
         height = d3.select('#tissue').attr('height');
+    // All the nodes that constitute the tissue
     this.nodes = [];
+
     this.links = [];
     this.layout = d3.layout.force()
         .nodes(this.nodes)
@@ -112,6 +137,8 @@ function Tissue() {
     this.modules = [];
     // Each added module will have a unique id
     this.module_id = 0;
+    // The line that is dragged from one node to the next, if any
+    this.current_line = {'is_alive':false, 'first_type':false, 'first_module_id':0, 'first_module_id': 0, 'first_node_id':0};
 
     this.layout.on("tick", function() {
         d3.select('#tissue').selectAll("line.link")
@@ -135,7 +162,7 @@ function Tissue() {
 
             d3.select('#tissue .hovered_text').remove();
             d3.select('#tissue').append("svg:text")
-                .text(node.name + ' : ' + node.type)
+                .text(node.name + ' : ' + node.var_type)
                 .attr("x",x + 10)
                 .attr("y",y - 10)
                 .attr('class', 'hovered_text');
@@ -147,26 +174,76 @@ function Tissue() {
 
     // Create a line when you grab an input/output node
     $('#tissue .node_input,.node_output').live('mousedown', function () {
-        var index = parseInt($(this).attr('id').substring(5));
-        var node = current_tissue.nodes[index];
-        var x = node.x, y = node.y;
+        // Sometimes the line still exists, so don't do anything then
+        console.info(current_tissue.current_line.is_alive);
+        if (!current_tissue.current_line.is_alive) {
+            var index = parseInt($(this).attr('id').substring(5));
+            var node = current_tissue.nodes[index];
+            var x = node.x, y = node.y;
 
-        d3.select('#tissue').append("svg:line")
-            .attr("x1",x)
-            .attr("y1",y)
-            .attr("x2",x)
-            .attr("y2",y)
-            .attr('class', 'current_link');
+            d3.select('#tissue').append("svg:line")
+                .attr("x1",x)
+                .attr("y1",y)
+                .attr("x2",x)
+                .attr("y2",y)
+                .attr('id', 'current_link');
+            current_tissue.current_line.is_alive = true;
+            current_tissue.current_line.first_node_id = node.id;
+            current_tissue.current_line.first_type = node.type;
+            current_tissue.current_line.first_module_id = node.module_id;
+            current_tissue.current_line.first_var_type = node.var_type;
+        };
     });
 
-    $(document).mouseup(function () {
-        d3.select('#tissue .current_link').remove();
+    // Finish the line when you release the button over an input/output
+    $('#tissue .node_input,.node_output').live('mouseup', function (e) {
+        // Only do it if there is a line
+        if (current_tissue.current_line.is_alive) {
+            var index = parseInt($(this).attr('id').substring(5));
+            var node = current_tissue.nodes[index];
+            // Make sure we are linking two different module
+            if (node.module_id==current_tissue.current_line.first_module_id)
+                return;
+            // Make sure we are linking an input and an output
+            if (node.type == current_tissue.current_line.first_type)
+                return;
+            // Make sure the type is the same
+            if (node.var_type!=current_tissue.current_line.first_var_type)
+                return;
+            
+            // If we passed everything, create a link
+            current_tissue.links.push({source: current_tissue.nodes[current_tissue.current_line.first_node_id], target: node});
+            current_tissue.UpdateLinks('external_link');
+            current_tissue.current_line.is_alive = false;
+            d3.select('#tissue #current_link').remove();
+        };
+    });
+
+    $('#rectangle_tissue').mouseup(function (e) {
+        if (e.target.id == 'rectangle_tissue') {
+            if (current_tissue.current_line.is_alive) {
+                current_tissue.current_line.is_alive = false;
+                d3.select('#tissue #current_link').remove();
+            }
+        }
     });
 
     $(document).mousemove(function (e) {
-      console.info(e.which);
-        $('.current_link').attr("x2",e.clientX - parseInt($('#tissue').css('left')))
-                .attr("y2",e.clientY - parseInt($('#tissue').css('top')));
+        if (current_tissue.current_line.is_alive) {
+            var x2 = e.clientX - parseInt($('#tissue').css('left'));
+            var y2 = e.clientY - parseInt($('#tissue').css('top'));
+            var x1 = $('#current_link').attr("x1"), y1 = $('#current_link').attr("y1");
+            var offset_x, offset_y;
+            if (x2>x1)
+                offset_x = -1;
+            else
+                offset_x = 1;
+            if (y2>y1)
+                offset_y = -1;
+            else
+                offset_y = 1;
+            $('#current_link').attr("x2",x2 + offset_x).attr("y2",y2 + offset_y);
+        }
     });
 };
 
@@ -180,8 +257,7 @@ Tissue.prototype.addModule = function(module_name) {
     this.modules.push(module);
 
     // Add the cental node
-    var node_center = {x: Math.random() * 600, y: Math.random() * 400};
-    var module_id = "module_" + module.id;
+    var node_center = new Node('module_' + module.id, 0,'',module.id);
     this.nodes.push(node_center);
     d3.select('#tissue').selectAll("circle.node")
         .data(this.nodes)
@@ -194,8 +270,10 @@ Tissue.prototype.addModule = function(module_name) {
     // Add graphical nodes corresponding to the inputs
     $.each({'input': EctoModules[module_name].inputs, 'output': EctoModules[module_name].outputs}, function(type, elements) {
         $.each(elements, function(name, element) {
-            var node = {'x': Math.random() * 600, 'y': Math.random() * 400, 'is_input': true, 'type': element.type, 'name': name, 'index': current_tissue.nodes.length};
-            node['is_input'] = (type == 'input');
+            var node_type = 1;
+            if (type=='output')
+                node_type = -1;
+            var node = new Node(element.name, node_type, element.type, module.id);
             current_tissue.nodes.push(node);
             current_tissue.links.push({source: node_center, target: node});
         });
@@ -206,29 +284,37 @@ Tissue.prototype.addModule = function(module_name) {
             .enter().insert("svg:circle", "circle.cursor")
             .attr("class", "node node_" + type)
             .attr("id", function(d) {
-                return "node_" + d.index;
+                return "node_" + d.id;
             })
             .attr("r", 8);
             //.call(current_tissue.layout.drag);
     });
+    
+    // Redraw everything
+    this.UpdateLinks('internal_link');
+}
 
+/** Make sure the latest links are of type link_class 
+ * link_class external_link or internal_link
+ */
+Tissue.prototype.UpdateLinks = function(link_class) {
     // Insert the links
     d3.select('#tissue').selectAll("line.link")
         .data(this.links)
-        .enter().insert("svg:line", "circle.node")
-        .attr("class", "link internal_link")
+        .enter().insert("svg:g").attr("rendering-order",1)
+        .insert("svg:line", "circle.node")
+        .attr("class", "link " + link_class)
         .attr("x1", function(d) { return d.source.x; })
         .attr("y1", function(d) { return d.source.y; })
         .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
+        .attr("y2", function(d) { return d.target.y; })
+        .attr('z-index',1);
 
      //$('*').listHandlers('*',console.info);
-
 
     // Start the graph optimization
     this.layout.start();
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Get the list of modules from the server

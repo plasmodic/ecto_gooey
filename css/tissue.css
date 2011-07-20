@@ -10,7 +10,12 @@ html, body {
     stroke-width: 2px;
 }
 
-.current_link {
+.external_link {
+    stroke: black;
+    stroke-width: 4px;
+}
+
+#current_link {
     stroke: black;
     stroke-width: 2px;
 }
