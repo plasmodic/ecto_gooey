@@ -136,8 +136,8 @@ function Tissue() {
             d3.select('#tissue .hovered_text').remove();
             d3.select('#tissue').append("svg:text")
                 .text(node.name + ' : ' + node.type)
-                .attr("x",x)
-                .attr("y",y)
+                .attr("x",x + 10)
+                .attr("y",y - 10)
                 .attr('class', 'hovered_text');
         });
     $('#tissue .node_input').live('mouseout',
@@ -159,11 +159,12 @@ function Tissue() {
             .attr('class', 'current_link');
     });
 
-    $('#tissue').live('mouseup', function () {
+    $(document).mouseup(function () {
         d3.select('#tissue .current_link').remove();
     });
 
-    $('#tissue').mousemove(function (e) {
+    $(document).mousemove(function (e) {
+      console.info(e.which);
         $('.current_link').attr("x2",e.clientX - parseInt($('#tissue').css('left')))
                 .attr("y2",e.clientY - parseInt($('#tissue').css('top')));
     });
@@ -207,11 +208,11 @@ Tissue.prototype.addModule = function(module_name) {
             .attr("id", function(d) {
                 return "node_" + d.index;
             })
-            .attr("r", 5);
+            .attr("r", 8);
             //.call(current_tissue.layout.drag);
     });
 
-    // Insert the link
+    // Insert the links
     d3.select('#tissue').selectAll("line.link")
         .data(this.links)
         .enter().insert("svg:line", "circle.node")

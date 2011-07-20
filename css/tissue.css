@@ -28,3 +28,8 @@ html, body {
     stroke: black;
     stroke-width: 1px;
 }
+
+.hovered_text {
+    background: blue;
+    background-color: blue;
+}
