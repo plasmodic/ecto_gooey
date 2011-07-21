@@ -1,5 +1,3 @@
-
-
 // A lot on that page is inspired by 
 // http://bl.ocks.org/929623
 
@@ -45,10 +43,11 @@ function EscapeHtml(input) {
 
 /** A Module is an abstract class containing info about how an ecto module works
  */
-function Module(raw_module) {
+function ModuleBase(raw_module) {
     // This is a string
     var current_module = this;
     this.name = raw_module.name;
+
     // This is an associative array where the key is the name of the input\
     this.inputs = {};
     this.outputs = {};
@@ -62,6 +61,25 @@ function Module(raw_module) {
     $.each(raw_module.params, function(index, param) {
         current_module.params[param.name] = param;
     });
+};
+
+/** A Module is an abstract class containing info about how an ecto module works
+ */
+function Module(base_module, is_generic) {
+    // This is a string
+    var current_module = this;
+    this.name = base_module.name;
+    this.id = Module.prototype.id;
+    ++Module.prototype.id;
+
+    this.hierarchy = 0;
+    this.parents = [];
+    this.children = [];
+
+    // Copy the inputs/outputs/params
+    this.inputs = base_module.inputs;
+    this.outputs = base_module.outputs;
+    this.params = base_module.params;
 };
 
 /** Function used to display better some memebers in the toString function
@@ -96,6 +114,48 @@ Module.prototype.toString = function() {
     message += '</div></br>';
     return message;
 };
+
+/** A module should have hierarchy as small as possible provided:
+ * max(parent's + 1) <= hiearchy <= min(children -1)
+ * If no children, fine, but if no parents, hierarchy = min(children -1)
+ */
+Module.prototype.UpdateHierarchy = function() {
+    var is_updated = false;
+    // First, check if the hierarchy works with any of the parent
+    // Parents are always right so they should be the reference
+    var new_hierarchy = 0;
+    $.each(this.parents, function(key,parent) {
+        new_hierarchy = Math.max(new_hierarchy, parent.hierarchy);
+    });
+    if (!this.parents.length)
+        return;
+    if (this.hierarchy < new_hierarchy + 1) {
+        this.hierarchy = new_hierarchy + 1;
+        // We update the parents but only if those have no parents
+        $.each(this.parents, function(key,parent) {
+            parent.UpdateChildIsRight();
+        });
+        // We only need to update the children
+        $.each(this.children, function(key,child) {
+            child.UpdateParentIsRight();
+        });
+    } else if (this.hierarchy > new_hierarchy + 1) {
+        // Let's get things tighter
+        this.hierarchy = new_hierarchy + 1;
+        // We only need to update the children
+        $.each(children, function(key,child) {
+            child.UpdateParentIsRight();
+        });
+    }
+    console.info('new hier : ' + this.hierarchy);
+}
+
+Module.prototype.UpdateParentIsRight = function() {
+}
+Module.prototype.UpdateChildIsRight = function() {
+}
+
+Module.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -134,13 +194,18 @@ function Tissue() {
         .links(this.links)
         .size([width, height]);
     // The list of modules building the tissue
-    this.modules = [];
-    // Each added module will have a unique id
-    this.module_id = 0;
+    this.modules = {};
     // The line that is dragged from one node to the next, if any
     this.current_line = {'is_alive':false, 'first_type':false, 'first_module_id':0, 'first_module_id': 0, 'first_node_id':0};
 
-    this.layout.on("tick", function() {
+    var current_tissue = this;
+    this.layout.on("tick", function(e) {
+        // Make sure the nodes move depending on the hierarchy
+        var k = .1 * e.alpha;
+        current_tissue.nodes.forEach(function(o, i) {
+            o.y += ((current_tissue.modules[o.module_id].hierarchy)*(-50) - o.y) * k;
+            //o.x += (400 - o.x) * k;
+        });
         d3.select('#tissue').selectAll("line.link")
             .attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
@@ -153,7 +218,6 @@ function Tissue() {
     
     
     // Make sure that when you hover the inputs/outputs, you show what they are
-    var current_tissue = this;
     $('#tissue .node_input,.node_output').live('mouseover',
         function () {
             var index = parseInt($(this).attr('id').substring(5));
@@ -213,6 +277,20 @@ function Tissue() {
             
             // If we passed everything, create a link
             current_tissue.links.push({source: current_tissue.nodes[current_tissue.current_line.first_node_id], target: node});
+            var module_input, module_output;
+            if (node.type == 1) {
+                module_input = current_tissue.modules[node.module_id];
+                module_output = current_tissue.modules[current_tissue.current_line.first_module_id];
+            } else {
+                module_output = current_tissue.modules[node.module_id];
+                module_input = current_tissue.modules[current_tissue.current_line.first_module_id];
+            }
+            module_input.children.push(module_output);
+            module_output.parents.push(module_input);
+            module_input.UpdateHierarchy();
+            module_output.UpdateHierarchy();
+            
+            // Update the graphical aspect
             current_tissue.UpdateLinks('external_link');
             current_tissue.current_line.is_alive = false;
             d3.select('#tissue #current_link').remove();
@@ -249,12 +327,9 @@ function Tissue() {
 
 Tissue.prototype.addModule = function(module_name) {
     // Create the newmodule to add to the tissue
-    var module = EctoModules[module_name];
+    var module = new Module(EctoModules[module_name]);
     var current_tissue = this;
-    module.id = this.module_id;
-    this.module_id = this.module_id + 1;
-
-    this.modules.push(module);
+    this.modules[module.id] = module;
 
     // Add the cental node
     var node_center = new Node('module_' + module.id, 0,'',module.id);
@@ -289,7 +364,7 @@ Tissue.prototype.addModule = function(module_name) {
             .attr("r", 8);
             //.call(current_tissue.layout.drag);
     });
-    
+
     // Redraw everything
     this.UpdateLinks('internal_link');
 }
@@ -325,7 +400,7 @@ function ecto_initialize_modules() {
     $.getJSON(EctoBaseUrl + '/module/list', function(data) {
     //$('#modules').append(String(data)).append(String(data["inputs"]));
     $.each(data, function (index, raw_module) {
-        var module = new Module(raw_module);
+        var module = new ModuleBase(raw_module);
         // Add the module to the list of modules
         EctoModules[module.name] = module;
         
