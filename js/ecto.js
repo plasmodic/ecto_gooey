@@ -164,8 +164,9 @@ Module.prototype.id = 0;
  * type: 0 for center, 1 for input, -1 for output
  * var_type: if an input/output, the C++ type (int, string ...)
  * module_id: the id of the module that the node belongs to
+ * center: the node that englobes that node if it is an input/ouput (empty if type==0)
  */
-function Node(name,type,var_type,module_id) {
+function Node(name,type,var_type,module_id,center) {
     this.x = Math.random() * 600;
     this.y = Math.random() * 400;
     this.type = type;
@@ -174,6 +175,7 @@ function Node(name,type,var_type,module_id) {
     this.id = Node.prototype.id;
     ++Node.prototype.id;
     this.module_id = module_id;
+    this.center = center;
 };
 
 Node.prototype.id = 0;
@@ -192,6 +194,7 @@ function Tissue() {
     this.layout = d3.layout.force()
         .nodes(this.nodes)
         .links(this.links)
+        .gravity(0)
         .size([width, height]);
     // The list of modules building the tissue
     this.modules = {};
@@ -202,9 +205,21 @@ function Tissue() {
     this.layout.on("tick", function(e) {
         // Make sure the nodes move depending on the hierarchy
         var k = .1 * e.alpha;
+        var layer_height = 80, offset = 50;
         current_tissue.nodes.forEach(function(o, i) {
-            o.y += ((current_tissue.modules[o.module_id].hierarchy)*(-50) - o.y) * k;
-            //o.x += (400 - o.x) * k;
+            if (o.type == 0) {
+              var y_diff = current_tissue.modules[o.module_id].hierarchy*layer_height + offset - o.y;
+              if (Math.abs(y_diff) > 1)
+                o.y += y_diff * 10 * e.alpha;
+            } else {
+              var y_diff = o.y - o.center.y;
+              if ((o.type == 1) && (y_diff < 0)) {
+                o.y += 10*e.alpha;
+              } else if ((o.type == -1) && (y_diff > 0)) {
+                o.y -= 10*e.alpha;
+              }
+            }
+            o.x += (400 - o.x) * 0.3 * k;
         });
         d3.select('#tissue').selectAll("line.link")
             .attr("x1", function(d) { return d.source.x; })
@@ -348,7 +363,7 @@ Tissue.prototype.addModule = function(module_name) {
             var node_type = 1;
             if (type=='output')
                 node_type = -1;
-            var node = new Node(element.name, node_type, element.type, module.id);
+            var node = new Node(element.name, node_type, element.type, module.id, node_center);
             current_tissue.nodes.push(node);
             current_tissue.links.push({source: node_center, target: node});
         });
@@ -390,6 +405,7 @@ Tissue.prototype.UpdateLinks = function(link_class) {
     // Start the graph optimization
     this.layout.start();
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Get the list of modules from the server
