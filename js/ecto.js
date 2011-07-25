@@ -115,46 +115,6 @@ Module.prototype.toString = function() {
     return message;
 };
 
-/** A module should have hierarchy as small as possible provided:
- * max(parent's + 1) <= hiearchy <= min(children -1)
- * If no children, fine, but if no parents, hierarchy = min(children -1)
- */
-Module.prototype.UpdateHierarchy = function() {
-    var is_updated = false;
-    // First, check if the hierarchy works with any of the parent
-    // Parents are always right so they should be the reference
-    var new_hierarchy = 0;
-    $.each(this.parents, function(key,parent) {
-        new_hierarchy = Math.max(new_hierarchy, parent.hierarchy);
-    });
-    if (!this.parents.length)
-        return;
-    if (this.hierarchy < new_hierarchy + 1) {
-        this.hierarchy = new_hierarchy + 1;
-        // We update the parents but only if those have no parents
-        $.each(this.parents, function(key,parent) {
-            parent.UpdateChildIsRight();
-        });
-        // We only need to update the children
-        $.each(this.children, function(key,child) {
-            child.UpdateParentIsRight();
-        });
-    } else if (this.hierarchy > new_hierarchy + 1) {
-        // Let's get things tighter
-        this.hierarchy = new_hierarchy + 1;
-        // We only need to update the children
-        $.each(children, function(key,child) {
-            child.UpdateParentIsRight();
-        });
-    }
-    console.info('new hier : ' + this.hierarchy);
-}
-
-Module.prototype.UpdateParentIsRight = function() {
-}
-Module.prototype.UpdateChildIsRight = function() {
-}
-
 Module.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,9 +124,8 @@ Module.prototype.id = 0;
  * type: 0 for center, 1 for input, -1 for output
  * var_type: if an input/output, the C++ type (int, string ...)
  * module_id: the id of the module that the node belongs to
- * center: the node that englobes that node if it is an input/ouput (empty if type==0)
  */
-function Node(name,type,var_type,module_id,center) {
+function Node(name,type,var_type,module_id) {
     this.x = Math.random() * 600;
     this.y = Math.random() * 400;
     this.type = type;
@@ -175,7 +134,6 @@ function Node(name,type,var_type,module_id,center) {
     this.id = Node.prototype.id;
     ++Node.prototype.id;
     this.module_id = module_id;
-    this.center = center;
 };
 
 Node.prototype.id = 0;
@@ -194,7 +152,6 @@ function Tissue() {
     this.layout = d3.layout.force()
         .nodes(this.nodes)
         .links(this.links)
-        .gravity(0)
         .size([width, height]);
     // The list of modules building the tissue
     this.modules = {};
@@ -205,21 +162,9 @@ function Tissue() {
     this.layout.on("tick", function(e) {
         // Make sure the nodes move depending on the hierarchy
         var k = .1 * e.alpha;
-        var layer_height = 80, offset = 50;
         current_tissue.nodes.forEach(function(o, i) {
-            if (o.type == 0) {
-              var y_diff = current_tissue.modules[o.module_id].hierarchy*layer_height + offset - o.y;
-              if (Math.abs(y_diff) > 1)
-                o.y += y_diff * 10 * e.alpha;
-            } else {
-              var y_diff = o.y - o.center.y;
-              if ((o.type == 1) && (y_diff < 0)) {
-                o.y += 10*e.alpha;
-              } else if ((o.type == -1) && (y_diff > 0)) {
-                o.y -= 10*e.alpha;
-              }
-            }
-            o.x += (400 - o.x) * 0.3 * k;
+            o.y += ((current_tissue.modules[o.module_id].hierarchy)*(-100) - o.y) * k;
+            //o.x += (400 - o.x) * k;
         });
         d3.select('#tissue').selectAll("line.link")
             .attr("x1", function(d) { return d.source.x; })
@@ -302,8 +247,7 @@ function Tissue() {
             }
             module_input.children.push(module_output);
             module_output.parents.push(module_input);
-            module_input.UpdateHierarchy();
-            module_output.UpdateHierarchy();
+            current_tissue.UpdateHierarchy();
             
             // Update the graphical aspect
             current_tissue.UpdateLinks('external_link');
@@ -363,7 +307,7 @@ Tissue.prototype.addModule = function(module_name) {
             var node_type = 1;
             if (type=='output')
                 node_type = -1;
-            var node = new Node(element.name, node_type, element.type, module.id, node_center);
+            var node = new Node(element.name, node_type, element.type, module.id);
             current_tissue.nodes.push(node);
             current_tissue.links.push({source: node_center, target: node});
         });
@@ -404,6 +348,51 @@ Tissue.prototype.UpdateLinks = function(link_class) {
 
     // Start the graph optimization
     this.layout.start();
+}
+
+/** A module should have hierarchy as small as possible provided:
+ * max(parent's + 1) <= hiearchy <= min(children -1)
+ * If no children, fine, but if no parents, hierarchy = min(children -1)
+ */
+Tissue.prototype.UpdateHierarchy = function() {
+    // Build the dot formated string that defines the graph
+    var dot_graph = 'digraph dot_graph { rankdir=LR; size="8,5";node [shape = circle];';
+    
+    $.each(this.links, function(link_id, link) {
+        if (link.source.module_id != link.target.module_id) {
+            dot_graph += link.source.module_id + ' -> ' + link.target.module_id + ' [ label = ' + link.target.name + ' ];';
+        }
+    });
+    
+    dot_graph += '}';
+
+    //
+    var post_answer = $.post(EctoBaseUrl + '/module/graph', {dot_graph: dot_graph}, function(data) {
+        console.info(data);
+        console.info($(data).find('svg').find('g'));
+        console.info($.parseXML(data));
+        var svg_doc = $($.parseXML(data));
+
+        console.info('toto');
+        console.info(svg_doc.toString());
+        console.info('toto');
+        $('#tissue2').html(svg_doc.toString());
+        // Deal with the SVG data
+    }, 'xml')
+    .error(function(x,e){
+            if(x.status==0){
+            alert('You are offline!!\n Please Check Your Network.');
+            }else if(x.status==404){
+            alert('Requested URL not found.');
+            }else if(x.status==500){
+            alert('Internel Server Error.');
+            }else if(e=='parsererror'){
+            alert('Error.\nParsing JSON Request failed.');
+            }else if(e=='timeout'){
+            alert('Request Time out.');
+            }else {
+            alert('An error happened: ' + e + ' with status ' + x.status + '.\n'+x.responseText);
+            }});
 }
 
 ////////////////////////////////////////////////////////////////////////////////

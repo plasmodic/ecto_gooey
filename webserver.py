@@ -7,10 +7,12 @@ import pkgutil
 import string,cgi,time
 import ecto
 from ecto_opencv import highgui, calib, features2d
+import dot2svg
 
 class MyHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
+        print self.path
         if self.path == '/module/list':
             # list the different modules
             self.send_response(200)
@@ -41,6 +43,19 @@ class MyHandler(BaseHTTPRequestHandler):
             print json.dumps(module_infos)
             self.wfile.write(json.dumps(module_infos))
             return
+        elif self.path.startswith('/module/graph'):
+            # list the different modules
+            self.send_response(200)
+            self.send_header('Content-type',    'text/html')
+            self.end_headers()
+            
+            # Read the DOT file format that was sent
+            self.rfile.read(dot_string)
+            print dot_string
+            
+            svg_graph = []
+            self.wfile.write(json.dumps(svg_graph))
+            return
         else:
             try:
                 if self.path.endswith(".html") or self.path.endswith(".js") or self.path.endswith(".css"):
@@ -69,20 +84,27 @@ class MyHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         global rootnode
-        try:
+        if 1:
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
             if ctype == 'multipart/form-data':
-                query=cgi.parse_multipart(self.rfile, pdict)
-            self.send_response(301)
-            
+                postvars = cgi.parse_multipart(self.rfile, pdict)
+            elif ctype == 'application/x-www-form-urlencoded':
+                length = int(self.headers.getheader('content-length'))
+                postvars = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
+            else:
+                postvars = {}            
             self.end_headers()
-            upfilecontent = query.get('upfile')
-            print "filecontent", upfilecontent[0]
-            self.wfile.write("<HTML>POST OK.<BR><BR>");
-            self.wfile.write(upfilecontent[0]);
             
-        except :
-            pass
+            dot_graph = postvars['dot_graph'][0]
+            print "dot graph: ", dot_graph
+            svg_graph = dot2svg.dot2svg(dot_graph)
+            svg_graph = svg_graph[svg_graph.find('<svg'):]
+            print "svg graph: ", svg_graph
+
+            self.wfile.write(svg_graph)
+
+        #except :
+         #   pass
 
 def main():
     try:
