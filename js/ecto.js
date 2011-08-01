@@ -7,6 +7,8 @@ var EctoBaseUrl = location.href.split('/', 3).join('/');
 var EctoModules = {};
 // The main tissue on which the modules will be linked
 var MainTissue;
+var AnimationFast = 200;
+var AnimationSlow = 600;
 
 function DebugObject(obj) {
   str='';
@@ -67,7 +69,7 @@ function ModuleBase(raw_module) {
 
 /** A Module is an abstract class containing info about how an ecto module works
  */
-function Module(base_module, is_generic) {
+function Module(base_module) {
     // This is a string
     var current_module = this;
     this.name = base_module.name;
@@ -84,18 +86,18 @@ function Module(base_module, is_generic) {
 
     this.io_nodes = {};
     $.each(base_module.inputs, function(index,input) {
-        var node = new Node(input,1,module_id);
+        var node = new IoNode(input,1,module_id);
         current_module.io_nodes[node.id] = node;
     });
 
     $.each(base_module.outputs, function(index,output) {
-        var node = new Node(output,-1,module_id);
+        var node = new IoNode(output,-1,module_id);
         current_module.io_nodes[node.id] = node;
     });
     
     // Deal with the central node
-    var node = new Node({name:this.name},0,module_id);
-    this.main_node = node;
+    this.svg_text = undefined;
+    this.svg_ellipse = undefined;
 };
 
 /** Function used to display better some memebers in the toString function
@@ -135,11 +137,9 @@ Module.prototype.toString = function() {
  */ 
 Module.prototype.UpdateSvg = function(new_svg,tissue,scale,translation_x,translation_y) {
     var ellipse = new_svg.find('ellipse');
-    var speed_slow = 600;
-    var speed_fast = 200;
     
     // First, make sure the SVG has been created
-    if (typeof this.main_node.svg_circle == "undefined") {
+    if (typeof this.svg_ellipse == "undefined") {
         this.CreateSvg(new_svg,tissue,scale,translation_x,translation_y);
         return;
     }
@@ -149,13 +149,13 @@ Module.prototype.UpdateSvg = function(new_svg,tissue,scale,translation_x,transla
         cy = scale*(parseInt(ellipse.attr('cy')) + translation_y),
         rx = scale*ellipse.attr('rx'),
         ry = scale*ellipse.attr('ry');
-    this.main_node.svg_circle.animate({cx: cx, cy: cy, rx: rx, ry: ry}, speed_slow);
+    this.svg_ellipse.animate({cx: cx, cy: cy, rx: rx, ry: ry}, AnimationSlow);
 
     // Update the main node text
     var text = new_svg.find('text');
     var x = scale*(parseInt(text.attr('x')) + translation_x),
         y = scale*(parseInt(text.attr('y')) + translation_y);
-    this.main_node.svg_text.animate({x: x, y: y}, speed_slow);
+    this.main_node.svg_text.animate({x: x, y: y}, AnimationSlow);
     this.main_node.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
 
     // Update the nodes that belong to links
@@ -175,9 +175,6 @@ Module.prototype.UpdateSvg = function(new_svg,tissue,scale,translation_x,transla
 /** Update th SVG for the nodes that have not been used yet
  */
 Module.prototype.UpdateUnusedIoSvg = function(io_nodes, cx, cy) {
-    var speed_slow = 600;
-    var speed_fast = 200;
-
     // Count the inputs and outputs
     var n_io = {};
     n_io[-1] = 0;
@@ -189,7 +186,7 @@ Module.prototype.UpdateUnusedIoSvg = function(io_nodes, cx, cy) {
     // Display the different nodes on a circle
     var io_index = {},
         angle_step = {},
-        radius = parseFloat(this.main_node.svg_circle.attr('rx'))/2;
+        radius = parseFloat(this.svg_ellipse.attr('rx'))/2;
     var offset = 0.5;
     io_index[-1] = offset;
     io_index[1] = offset;
@@ -204,7 +201,7 @@ Module.prototype.UpdateUnusedIoSvg = function(io_nodes, cx, cy) {
     $.each(io_nodes, function(node_id, node) {
         var angle = node.io*io_index[node.io]*angle_step[node.io];
 
-        node.svg_circle.animate({cx:cx+radius*Math.cos(angle), cy:cy+radius*Math.sin(angle)}, speed_slow);
+        node.svg_circle.animate({cx:cx+radius*Math.cos(angle), cy:cy+radius*Math.sin(angle)}, AnimationSlow);
         io_index[node.io] += 1;
     });
 };
@@ -213,16 +210,16 @@ Module.prototype.UpdateUnusedIoSvg = function(io_nodes, cx, cy) {
  */ 
 Module.prototype.CreateSvg = function(new_svg,tissue,scale,translation_x,translation_y) {
     var ellipse = new_svg.find('ellipse');
-    var speed_slow = 600;
-    var speed_fast = 200;
+    var AnimationSlow = 600;
+    var AnimationFast = 200;
 
     // Create the main node ellipse
     var cx = scale*(parseInt(ellipse.attr('cx')) + translation_x),
         cy = scale*(parseInt(ellipse.attr('cy')) + translation_y),
         rx = scale*ellipse.attr('rx'),
         ry = scale*ellipse.attr('ry');
-    this.main_node.svg_circle = tissue.raphael.ellipse(cx,cy,rx,ry);
-    this.main_node.svg_circle.attr('opacity',0).animate({opacity: 1}, speed_slow);
+    this.svg_ellipse = tissue.raphael.ellipse(cx,cy,rx,ry);
+    this.svg_ellipse.attr('opacity',0).animate({opacity: 1}, AnimationSlow);
     
     // Create the IO nodes
     $.each(this.io_nodes, function(node_id, node) {
@@ -233,17 +230,17 @@ Module.prototype.CreateSvg = function(new_svg,tissue,scale,translation_x,transla
         else
             node.svg_circle.node.setAttribute("class",'node_output');
         node.svg_circle.node.id = 'io' + node.id;
-        node.svg_circle.attr('opacity',0).animate({opacity: 1}, speed_slow);
+        node.svg_circle.attr('opacity',0).animate({opacity: 1}, AnimationSlow);
     });
 
     // Create the main node text
     var text = new_svg.find('text');
     var x = scale*(parseInt(text.attr('x')) + translation_x),
         y = scale*(parseInt(text.attr('y')) + translation_y);
-    this.main_node.svg_text = tissue.raphael.text(x,y,text[0].textContent);
-    this.main_node.svg_text.attr('opacity',0).animate({opacity: 1}, speed_slow);
-    this.main_node.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
-    this.main_node.svg_text.toFront();
+    this.svg_text = tissue.raphael.text(x,y,text[0].textContent);
+    this.svg_text.attr('opacity',0).animate({opacity: 1}, AnimationSlow);
+    this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
+    this.svg_text.toFront();
 
     this.UpdateUnusedIoSvg(this.io_nodes, cx, cy);
 };
@@ -252,14 +249,16 @@ Module.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** A Node is one of the nodes in the graph
- * io: 0 for center, 1 for input, -1 for output
+/** An IoNode is one of the input/output nodes in the graph for a module
+ * io: 1 for input, -1 for output
  * module_id: the id of the module that the node belongs to
  */
-function Node(node_raw,io,module_id) {
+function IoNode(node_raw,io,module_id) {
+    var current_io_node = this;
     $.each(node_raw, function(key, value) {
-        this[key] = value;
+        current_io_node[key] = value;
     });
+    console.info(node_raw);
     this.io = io;
     this.id = Node.prototype.id;
     ++Node.prototype.id;
@@ -278,8 +277,8 @@ function Tissue() {
     var width = 800,
         height = 600;
     // All the nodes that constitute the tissue
-    this.nodes = [];
-    this.links = [];
+    this.nodes = {};
+    this.links = {};
 
     // The list of modules building the tissue
     this.modules = {};
@@ -289,27 +288,31 @@ function Tissue() {
     this.module_id_to_svg = {};
     this.edge_id_to_svg = {};
     this.raphael = Raphael(200, 0, width, height);
-    this.raphael.canvas.setAttribute("class",'tissue');
+    this.raphael.canvas.setAttribute("id",'tissue');
+    this.hovered_text = [];
 
-    var current_tissue = this;    
+    var current_tissue = this;
     
     // Make sure that when you hover the inputs/outputs, you show what they are
     $('#tissue .node_input,.node_output').live('mouseover',
         function () {
-            var index = parseInt($(this).attr('id').substring(5));
+            var index = parseInt($(this).attr('id').substring(2));
+            console.info(index);
             var node = current_tissue.nodes[index];
-            var x = node.x, y = node.y;
+            var x = parseInt(node.svg_circle.attr('cx')),
+                y = parseInt(node.svg_circle.attr('cy'));
 
-            $('#tissue .hovered_text').remove();
-            $('#tissue').append("svg:text")
-                .text(node.name + ' : ' + node.var_type)
-                .attr("x",x + 10)
-                .attr("y",y - 10)
-                .attr('class', 'hovered_text');
+            var text = current_tissue.raphael.text(x+10,y+10,node.name + ' : ' + node.type);
+            text.node.setAttribute('class', 'hovered_text');
+            current_tissue.hovered_text.push(text);
         });
-    $('#tissue .node_input').live('mouseout',
+    $('#tissue .node_input,.node_output').live('mouseout',
         function () {
-            $('#tissue .hovered_text').fadeOut('slow');
+            $.each(current_tissue.hovered_text, function(index, text) {
+                text.animate({opacity:0},AnimationSlow,function() {
+                    this.remove();
+                });
+            });
         });
 
     // Create a line when you grab an input/output node
@@ -404,6 +407,11 @@ Tissue.prototype.addModule = function(module_name) {
     var module = new Module(EctoModules[module_name]);
     var current_tissue = this;
     this.modules[module.id] = module;
+    
+    // Update all the nodes
+    $.each(module.io_nodes, function(node_id, node) {
+        current_tissue.nodes[node_id] = node;
+    });
 
     // Redraw everything
     this.UpdateGraph();
