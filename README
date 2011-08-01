@@ -4,3 +4,7 @@ http://neyric.github.com/wireit/
 http://processingjs.org/
 http://mbostock.github.com/d3/
 http://thejit.org/
+
+To run the GUI:
+- start the webserver by typing: "python webserver.py" (make sure you have ecto_opencv in your PYTHONPATH)
+- from your webbrowser, go to http://localhost:15472/index.html
