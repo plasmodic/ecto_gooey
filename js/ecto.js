@@ -1,6 +1,3 @@
-// A lot on that page is inspired by 
-// http://bl.ocks.org/929623
-
 // Contains the base of the URL
 var EctoBaseUrl = location.href.split('/', 3).join('/');
 // dictionary from a module name to the module object
@@ -155,8 +152,8 @@ Module.prototype.UpdateSvg = function(new_svg,tissue,scale,translation_x,transla
     var text = new_svg.find('text');
     var x = scale*(parseInt(text.attr('x')) + translation_x),
         y = scale*(parseInt(text.attr('y')) + translation_y);
-    this.main_node.svg_text.animate({x: x, y: y}, AnimationSlow);
-    this.main_node.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
+    this.svg_text.animate({x: x, y: y}, AnimationSlow);
+    this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
 
     // Update the nodes that belong to links
     var used_io_nodes = [];
@@ -258,7 +255,6 @@ function IoNode(node_raw,io,module_id) {
     $.each(node_raw, function(key, value) {
         current_io_node[key] = value;
     });
-    console.info(node_raw);
     this.io = io;
     this.id = Node.prototype.id;
     ++Node.prototype.id;
@@ -278,12 +274,12 @@ function Tissue() {
         height = 600;
     // All the nodes that constitute the tissue
     this.nodes = {};
-    this.links = {};
+    this.links = [];
 
     // The list of modules building the tissue
     this.modules = {};
     // The line that is dragged from one node to the next, if any
-    this.current_line = {'is_alive':false, 'first_type':false, 'first_module_id':0, 'first_module_id': 0, 'first_node_id':0};
+    this.current_line = undefined;
     
     this.module_id_to_svg = {};
     this.edge_id_to_svg = {};
@@ -297,7 +293,6 @@ function Tissue() {
     $('#tissue .node_input,.node_output').live('mouseover',
         function () {
             var index = parseInt($(this).attr('id').substring(2));
-            console.info(index);
             var node = current_tissue.nodes[index];
             var x = parseInt(node.svg_circle.attr('cx')),
                 y = parseInt(node.svg_circle.attr('cy'));
@@ -306,6 +301,7 @@ function Tissue() {
             text.node.setAttribute('class', 'hovered_text');
             current_tissue.hovered_text.push(text);
         });
+    // Delete what an IoNode is when the mouse is not over it
     $('#tissue .node_input,.node_output').live('mouseout',
         function () {
             $.each(current_tissue.hovered_text, function(index, text) {
@@ -317,87 +313,88 @@ function Tissue() {
 
     // Create a line when you grab an input/output node
     $('#tissue .node_input,.node_output').live('mousedown', function () {
+        if (typeof current_tissue.current_line != 'undefined')
+            return;
         // Sometimes the line still exists, so don't do anything then
-        if (!current_tissue.current_line.is_alive) {
-            var index = parseInt($(this).attr('id').substring(5));
-            var node = current_tissue.nodes[index];
-            var x = node.x, y = node.y;
+        var index = parseInt($(this).attr('id').substring(2));
+        var node = current_tissue.nodes[index];
+        var x = parseInt(node.svg_circle.attr('cx')),
+            y = parseInt(node.svg_circle.attr('cy'));
 
-            $('#tissue').append("svg:line")
-                .attr("x1",x)
-                .attr("y1",y)
-                .attr("x2",x)
-                .attr("y2",y)
-                .attr('id', 'current_link');
-            current_tissue.current_line.is_alive = true;
-            current_tissue.current_line.first_node_id = node.id;
-            current_tissue.current_line.first_type = node.type;
-            current_tissue.current_line.first_module_id = node.module_id;
-            current_tissue.current_line.first_var_type = node.var_type;
-        };
+        current_tissue.current_line = {};
+        current_tissue.current_line.line = current_tissue.raphael.path('M' + x + ' ' + y + 'L' + x + ' ' + y);
+        current_tissue.current_line.line.node.setAttribute('id', 'current_link');
+        current_tissue.current_line.x = x;
+        current_tissue.current_line.y = y;
+        current_tissue.current_line.first_node_id = node.id;
+        current_tissue.current_line.first_io = node.io;
+        current_tissue.current_line.first_module_id = node.module_id;
+        current_tissue.current_line.first_type = node.type;
+    });
+
+            
+    // From now on, when we move the mouse, the line also moves
+    $(document).mousemove(function (e) {
+        // Only do it if there is a line
+        if (typeof current_tissue.current_line == 'undefined')
+            return;
+        var x2 = e.clientX - parseInt($('#tissue').css('left'));
+        var y2 = e.clientY - parseInt($('#tissue').css('top'));
+        var x1 = current_tissue.current_line.x, y1 = current_tissue.current_line.y;
+        var offset_x, offset_y;
+        if (x2>x1)
+            offset_x = -1;
+        else
+            offset_x = 1;
+        if (y2>y1)
+            offset_y = -1;
+        else
+            offset_y = 1;
+        current_tissue.current_line.line.attr('path', 'M' + x1 + ' ' + y1 + 'L' + (x2 + offset_x) + ' ' + (y2 + offset_y));
     });
 
     // Finish the line when you release the button over an input/output
     $('#tissue .node_input,.node_output').live('mouseup', function (e) {
         // Only do it if there is a line
-        if (current_tissue.current_line.is_alive) {
-            var index = parseInt($(this).attr('id').substring(2));
-            var node = current_tissue.nodes[index];
-            // Make sure we are linking two different module
-            if (node.module_id==current_tissue.current_line.first_module_id)
-                return;
-            // Make sure we are linking an input and an output
-            if (node.type == current_tissue.current_line.first_type)
-                return;
-            // Make sure the type is the same
-            if (node.var_type!=current_tissue.current_line.first_var_type)
-                return;
-            
-            // If we passed everything, create a link
-            current_tissue.links.push({source: current_tissue.nodes[current_tissue.current_line.first_node_id], target: node});
-            var module_input, module_output;
-            if (node.type == 1) {
-                module_input = current_tissue.modules[node.module_id];
-                module_output = current_tissue.modules[current_tissue.current_line.first_module_id];
-            } else {
-                module_output = current_tissue.modules[node.module_id];
-                module_input = current_tissue.modules[current_tissue.current_line.first_module_id];
-            }
-            module_input.children.push(module_output);
-            module_output.parents.push(module_input);
-            current_tissue.UpdateHierarchy();
-            
-            // Update the graphical aspect
-            current_tissue.UpdateLinks('external_link');
-            current_tissue.current_line.is_alive = false;
-            $('#tissue #current_link').remove();
-        };
+        if (typeof current_tissue.current_line == 'undefined')
+            return;
+        var index = parseInt($(this).attr('id').substring(2));
+        var node = current_tissue.nodes[index];
+        // Make sure we are linking two different module
+        if (node.module_id==current_tissue.current_line.first_module_id)
+            return;
+        // Make sure we are linking an input and an output
+        if (node.io == current_tissue.current_line.first_io)
+            return;
+        // Make sure the type is the same
+        if (node.type!=current_tissue.current_line.first_type)
+            return;
+        
+        // If we passed everything, create a link
+        current_tissue.links.push({source: current_tissue.nodes[current_tissue.current_line.first_node_id], target: node});
+        var module_input, module_output;
+        if (node.type == 1) {
+            module_input = current_tissue.modules[node.module_id];
+            module_output = current_tissue.modules[current_tissue.current_line.first_module_id];
+        } else {
+            module_output = current_tissue.modules[node.module_id];
+            module_input = current_tissue.modules[current_tissue.current_line.first_module_id];
+        }
+        module_input.children.push(module_output);
+        module_output.parents.push(module_input);
+        
+        // Update the graphical aspect
+        current_tissue.UpdateGraph();
+        current_tissue.current_line.line.remove();
+        current_tissue.current_line = undefined;
     });
 
     $('#rectangle_tissue').mouseup(function (e) {
         if (e.target.id == 'rectangle_tissue') {
-            if (current_tissue.current_line.is_alive) {
-                current_tissue.current_line.is_alive = false;
-                $('#tissue #current_link').remove();
+            if (typeof current_tissue.current_line != 'undefined') {
+                current_tissue.current_line.line.remove();
+                current_tissue.current_line = undefined;
             }
-        }
-    });
-
-    $(document).mousemove(function (e) {
-        if (current_tissue.current_line.is_alive) {
-            var x2 = e.clientX - parseInt($('#tissue').css('left'));
-            var y2 = e.clientY - parseInt($('#tissue').css('top'));
-            var x1 = $('#current_link').attr("x1"), y1 = $('#current_link').attr("y1");
-            var offset_x, offset_y;
-            if (x2>x1)
-                offset_x = -1;
-            else
-                offset_x = 1;
-            if (y2>y1)
-                offset_y = -1;
-            else
-                offset_y = 1;
-            $('#current_link').attr("x2",x2 + offset_x).attr("y2",y2 + offset_y);
         }
     });
 };
