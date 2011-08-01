@@ -189,7 +189,7 @@ Module.prototype.UpdateUnusedIoSvg = function(io_nodes, cx, cy) {
     // Display the different nodes on a circle
     var io_index = {},
         angle_step = {},
-        radius = 20;
+        radius = parseFloat(this.main_node.svg_circle.attr('rx'))/2;
     var offset = 0.5;
     io_index[-1] = offset;
     io_index[1] = offset;
@@ -232,6 +232,7 @@ Module.prototype.CreateSvg = function(new_svg,tissue,scale,translation_x,transla
             node.svg_circle.node.setAttribute("class",'node_input');
         else
             node.svg_circle.node.setAttribute("class",'node_output');
+        node.svg_circle.node.id = 'io' + node.id;
         node.svg_circle.attr('opacity',0).animate({opacity: 1}, speed_slow);
     });
 
@@ -337,7 +338,7 @@ function Tissue() {
     $('#tissue .node_input,.node_output').live('mouseup', function (e) {
         // Only do it if there is a line
         if (current_tissue.current_line.is_alive) {
-            var index = parseInt($(this).attr('id').substring(5));
+            var index = parseInt($(this).attr('id').substring(2));
             var node = current_tissue.nodes[index];
             // Make sure we are linking two different module
             if (node.module_id==current_tissue.current_line.first_module_id)
