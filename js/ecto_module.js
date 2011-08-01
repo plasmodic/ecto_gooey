@@ -249,6 +249,17 @@ IoNode.prototype.svgDelete = function() {
     this.svg_circle.animate({'opacity':0}, AnimationFast).remove();
 };
 
+IoNode.prototype.svgUpdate = function(x,y) {
+};
+
+IoNode.prototype.x = function() {
+    return parseInt(this.svg_circle.attr('cx'));
+};
+
+IoNode.prototype.y = function() {
+    return parseInt(this.svg_circle.attr('cy'));
+};
+
 IoNode.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -282,21 +293,26 @@ IoEdge.prototype.svgDelete = function() {
 };
 
 IoEdge.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,translation_y) {
-    // Deal with the path
+    // Create a bogus path that is at the final position
     var path = tissue.raphael.path(new_svg.find('path').attr('d'));
     path.attr('opacity',0);
     path.translate(translation_x,translation_y);
     path.scale(scale,scale,0,0);
     
+    // Deal with the nodes
+    this.source.svgUpdate();
+    this.target.svgUpdate();
+    
+    // Deal with the path
     if (typeof this.svg_path == 'undefined') {
-        this.svg_path = path;
-        this.svg_path.animate({'opacity': 1}, AnimationSlow);
-    } else {
-        console.info(path.attr('path').toString());
-        this.svg_path.animate({'path': path.attr('path')}, AnimationSlow, function() {
-            path.remove();
-        });
+      // add a new path
+        this.svg_path = tissue.raphael.path('M' + this.source.x() + ' ' + this.source.y() + 'L' + this.target.x() + ' ' + this.target.y());
     }
+    // morph the old path
+    this.svg_path.animate({'path': path.attr('path'), 'opacity': 1}, AnimationSlow, function() {
+        path.remove();
+    });
+    console.info(this.svg_path);
 };
 
 IoEdge.prototype.id = 0;
