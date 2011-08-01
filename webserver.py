@@ -8,12 +8,14 @@ import string,cgi,time
 import ecto
 from ecto_opencv import highgui, calib, features2d
 import dot2svg
+import urlparse
 
 class MyHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        print self.path
-        if self.path == '/module/list':
+        path = urlparse.urlparse(self.path).path
+        print path
+        if path == '/module/list':
             # list the different modules
             self.send_response(200)
             self.send_header('Content-type',    'text/html')
@@ -43,7 +45,7 @@ class MyHandler(BaseHTTPRequestHandler):
             print json.dumps(module_infos)
             self.wfile.write(json.dumps(module_infos))
             return
-        elif self.path.startswith('/module/graph'):
+        elif path.startswith('/module/graph'):
             # list the different modules
             self.send_response(200)
             self.send_header('Content-type',    'text/html')
@@ -58,22 +60,14 @@ class MyHandler(BaseHTTPRequestHandler):
             return
         else:
             try:
-                if self.path.endswith(".html") or self.path.endswith(".js") or self.path.endswith(".css"):
-                    f = open(curdir + sep + self.path) #self.path has /test.html
-    #note that this potentially makes every file on your computer readable by the internet
+                if path.endswith(".html") or path.endswith(".js") or path.endswith(".css"):
+                    f = open(curdir + sep + path)
 
                     self.send_response(200)
                     self.send_header('Content-type',	'text/html')
                     self.end_headers()
                     self.wfile.write(f.read())
                     f.close()
-                    return
-                if self.path.endswith(".esp"):   #our dynamic content
-                    self.send_response(200)
-                    self.send_header('Content-type',	'text/html')
-                    self.end_headers()
-                    self.wfile.write("hey, today is the" + str(time.localtime()[7]))
-                    self.wfile.write(" day in the year " + str(time.localtime()[0]))
                     return
                     
                 return

@@ -105,12 +105,12 @@ Module.prototype.toString = function() {
 
 /** Display the different members of the Module object
  */ 
-Module.prototype.UpdateSvg = function(new_svg,tissue,scale,translation_x,translation_y) {
+Module.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,translation_y) {
     var ellipse = new_svg.find('ellipse');
     
     // First, make sure the SVG has been created
     if (typeof this.svg_ellipse == "undefined") {
-        this.CreateSvg(new_svg,tissue,scale,translation_x,translation_y);
+        this.svgCreate(new_svg,tissue,scale,translation_x,translation_y);
         return;
     }
 
@@ -128,23 +128,18 @@ Module.prototype.UpdateSvg = function(new_svg,tissue,scale,translation_x,transla
     this.svg_text.animate({x: x, y: y}, AnimationSlow);
     this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
 
-    // Update the nodes that belong to links
-    var used_io_nodes = [];
-    //TODO
-    
     // Update the nodes that do not belong to links
     var unused_io_nodes = {};
     $.each(this.io_nodes, function(node_id, node) {
-        if (node_id in used_io_nodes)
-            return;
-        unused_io_nodes[node_id] = node;
+        if ($.isEmptyObject(node.edges))
+            unused_io_nodes[node_id] = node;
     });
-    this.UpdateUnusedIoSvg(unused_io_nodes, cx, cy);
+    this.svgUpdateUnusedIo(unused_io_nodes, cx, cy);
 };
 
-/** Update th SVG for the nodes that have not been used yet
+/** Update the SVG for the nodes that have not been used yet
  */
-Module.prototype.UpdateUnusedIoSvg = function(io_nodes, cx, cy) {
+Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy) {
     // Count the inputs and outputs
     var n_io = {};
     n_io[-1] = 0;
@@ -178,7 +173,7 @@ Module.prototype.UpdateUnusedIoSvg = function(io_nodes, cx, cy) {
 
 /** Create the SVG for a newly initialized module
  */ 
-Module.prototype.CreateSvg = function(new_svg,tissue,scale,translation_x,translation_y) {
+Module.prototype.svgCreate = function(new_svg,tissue,scale,translation_x,translation_y) {
     var ellipse = new_svg.find('ellipse');
     var AnimationSlow = 600;
     var AnimationFast = 200;
@@ -212,7 +207,15 @@ Module.prototype.CreateSvg = function(new_svg,tissue,scale,translation_x,transla
     this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
     this.svg_text.toFront();
 
-    this.UpdateUnusedIoSvg(this.io_nodes, cx, cy);
+    this.svgUpdateUnusedIo(this.io_nodes, cx, cy);
+};
+
+Module.prototype.svgDelete = function() {
+    $.each(module.io_nodes, function(node_id, node) {
+        node.svgDelete();
+    });
+    this.svg_text.animate({'opacity':0}, AnimationFast).remove();
+    this.svg_ellipse.animate({'opacity':0}, AnimationFast).remove();
 };
 
 Module.prototype.id = 0;
@@ -231,9 +234,19 @@ function IoNode(node_raw,io,module_id) {
     this.io = io;
     this.id = IoNode.prototype.id;
     ++IoNode.prototype.id;
+    // Contains IoEdge's;
+    this.edges = {};
     this.module_id = module_id;
     this.svg_text = undefined;
     this.svg_circle = undefined;
+};
+
+IoNode.prototype.svgDelete = function() {
+    $.each(this.edges, function(edge_id, edge) {
+        edge.svgDelete();
+    });
+    this.svg_text.animate({'opacity':0}, AnimationFast).remove();
+    this.svg_circle.animate({'opacity':0}, AnimationFast).remove();
 };
 
 IoNode.prototype.id = 0;
@@ -256,6 +269,34 @@ function IoEdge(node_1,node_2) {
     this.svg_text_source = undefined;
     this.svg_text_target = undefined;
     this.svg_path = undefined;
+
+    // update the corresponding nodes
+    this.source.edges[this.id] = this;
+    this.target.edges[this.id] = this;
+};
+
+IoEdge.prototype.svgDelete = function() {
+    this.svg_text_source.animate({'opacity':0}, AnimationFast).remove();
+    this.svg_text_target.animate({'opacity':0}, AnimationFast).remove();
+    this.svg_path.animate({'opacity':0}, AnimationFast).remove();
+};
+
+IoEdge.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,translation_y) {
+    // Deal with the path
+    var path = tissue.raphael.path(new_svg.find('path').attr('d'));
+    path.attr('opacity',0);
+    path.translate(translation_x,translation_y);
+    path.scale(scale,scale,0,0);
+    
+    if (typeof this.svg_path == 'undefined') {
+        this.svg_path = path;
+        this.svg_path.animate({'opacity': 1}, AnimationSlow);
+    } else {
+        console.info(path.attr('path').toString());
+        this.svg_path.animate({'path': path.attr('path')}, AnimationSlow, function() {
+            path.remove();
+        });
+    }
 };
 
 IoEdge.prototype.id = 0;
