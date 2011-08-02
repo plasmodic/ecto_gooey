@@ -60,7 +60,7 @@ class MyHandler(BaseHTTPRequestHandler):
             return
         else:
             try:
-                if path.endswith(".html") or path.endswith(".js") or path.endswith(".css"):
+                if path.endswith(".html") or path.endswith(".js") or path.endswith(".css") or path.endswith(".png"):
                     f = open(curdir + sep + path)
 
                     self.send_response(200)

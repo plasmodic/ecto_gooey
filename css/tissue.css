@@ -28,7 +28,7 @@ html, body {
     fill: red;
 }
 
-.node_center {
+.module_center {
     fill: white;
     stroke: black;
     stroke-width: 1px;

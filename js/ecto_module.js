@@ -61,13 +61,16 @@ function Module(base_module, tissue) {
         var node = new IoNode(output,-1,module_id,tissue);
         current_module.io_nodes[node.id] = node;
     });
-    
+
     // Create the main node ellipse
     var width = tissue.raphael.width,
         height = tissue.raphael.height;
-    
+
     this.svg_ellipse = tissue.raphael.ellipse(Math.random()*width/2,Math.random()*height/2,Math.random()*width,Math.random()*height);
-    
+    this.svg_ellipse.toBack();
+    this.svg_ellipse.node.setAttribute('class', 'module_center');
+    this.svg_ellipse.node.id = 'module' + this.id;
+
     // Create the main node text
     this.svg_text = new ModuleName(this.name,tissue);
 };
@@ -163,12 +166,18 @@ Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy, rx, ry) {
     });
 };
 
-Module.prototype.svgDelete = function() {
-    $.each(module.io_nodes, function(node_id, node) {
-        node.svgDelete();
+Module.prototype.delete = function() {
+    // Delete the nodes
+    $.each(this.io_nodes, function(node_id, node) {
+        node.delete();
     });
+
+    // Delete the SVG
     this.svg_text.svgDelete();
     this.svg_ellipse.animate({'opacity':0}, AnimationFast).remove();
+
+    // Delete it the modules from the database of modules
+    delete this.tissue.modules[this.id];
 };
 
 Module.prototype.id = 0;
@@ -190,6 +199,7 @@ function IoNode(node_raw,io,module_id,tissue) {
     // Contains IoEdge's;
     this.edges = {};
     this.module_id = module_id;
+    this.tissue = tissue;
 
     // Create the text
     this.svg_text = undefined;
@@ -204,12 +214,21 @@ function IoNode(node_raw,io,module_id,tissue) {
     this.svg_circle.node.id = 'io' + this.id;
 };
 
-IoNode.prototype.svgDelete = function() {
+IoNode.prototype.delete = function() {
+    // Delete the edges
     $.each(this.edges, function(edge_id, edge) {
-        edge.svgDelete();
+        edge.delete();
     });
-    this.svg_text.animate({'opacity':0}, AnimationFast).remove();
+    
+    //TODO
+    //if (typeof this.svg_text != 'undefined')
+//    this.svg_text.animate({'opacity':0}, AnimationFast).remove();
+    
+    // Delete the SVG
     this.svg_circle.animate({'opacity':0}, AnimationFast).remove();
+    
+    // Delete it from the list of Nodes
+    delete this.tissue.nodes[this.id];
 };
 
 IoNode.prototype.svgUpdate = function(x,y) {
@@ -254,9 +273,15 @@ function IoEdge(node_1,node_2) {
     this.target.edges[this.id] = this;
 };
 
-IoEdge.prototype.svgDelete = function() {
-    this.svg_text_source.animate({'opacity':0}, AnimationFast).remove();
-    this.svg_text_target.animate({'opacity':0}, AnimationFast).remove();
+IoEdge.prototype.delete = function() {
+    delete this.source.edges[this.id];
+    delete this.target.edges[this.id];
+    
+    //TODO
+    //this.svg_text_source.animate({'opacity':0}, AnimationFast).remove();
+    //this.svg_text_target.animate({'opacity':0}, AnimationFast).remove();
+    
+    // Delete the SVG
     this.svg_path.animate({'opacity':0}, AnimationFast).remove();
 };
 
@@ -295,6 +320,8 @@ function ModuleName(text,tissue) {
     // Create the main node text
     this.svg_text = tissue.raphael.text(Math.random()*width,Math.random()*height,text);
     this.svg_text.attr('opacity',0);
+    this.svg_text.node.setAttribute('class', 'module_name');
+    $(this.svg_text.node).children().attr('class', 'module_name');
     this.svg_text.toFront();
 };
 
@@ -306,7 +333,7 @@ ModuleName.prototype.svgUpdate = function(new_svg,scale,translation_x,translatio
     var text = new_svg.find('text');
     var x = scale*(parseInt(text.attr('x')) + translation_x),
         y = scale*(parseInt(text.attr('y')) + translation_y);
-    this.svg_text.animate({x: x, y: y}, AnimationSlow);
+    this.svg_text.animate({x: x, y: y, opacity:1}, AnimationSlow);
     this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
     this.svg_text.attr('text', new_svg.find('text').text(0).textContent);
 }

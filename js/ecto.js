@@ -41,11 +41,11 @@ function EscapeHtml(input) {
 /** The class responsible for linking and displaying modules
  */ 
 function Tissue() {
+    var current_tissue = this;
     var width = 800,
         height = 600;
     // All the nodes that constitute the tissue
     this.nodes = {};
-    this.edges = {};
 
     // The list of modules building the tissue
     this.modules = {};
@@ -55,9 +55,17 @@ function Tissue() {
     this.raphael = Raphael(200, 0, width, height);
     this.raphael.canvas.setAttribute("id",'tissue');
     this.hovered_text = [];
-
-    var current_tissue = this;
     
+    // Add the icon for deleting a module
+    this.delete_icon = this.raphael.image('image/trash.png', 100, 100, 32, 32);
+    this.hovered_module_id = undefined;
+    this.delete_icon.attr('opacity',0);
+    this.delete_icon.node.setAttribute('class','trash_image');
+    this.delete_icon.toFront();
+    $(this.delete_icon.node).bind('click', function(e) {
+        current_tissue.deleteModule(current_tissue.hovered_module_id);
+    });
+
     // Make sure that when you hover the inputs/outputs, you show what they are
     $('#tissue .node_input,.node_output').live('mouseover',
         function () {
@@ -95,31 +103,40 @@ function Tissue() {
         current_tissue.current_edge.line.node.setAttribute('id', 'current_edge');
         current_tissue.current_edge.x = x;
         current_tissue.current_edge.y = y;
-        current_tissue.current_edge.first_node_id = node.id;
-        current_tissue.current_edge.first_io = node.io;
-        current_tissue.current_edge.first_module_id = node.module_id;
-        current_tissue.current_edge.first_type = node.type;
+        current_tissue.current_edge.first_node = node;
     });
 
             
     // From now on, when we move the mouse, the line also moves
     $(document).mousemove(function (e) {
+        // Check if we still need to show the delete_icon
+        if ($(e.target).is('.module_center, .trash_image, .module_name')) {
+            if ($(e.target).is('.module_center')) {
+                // reposition the icon
+                current_tissue.hovered_module_id = parseInt(e.target.id.substring(6));
+                var module = current_tissue.modules[current_tissue.hovered_module_id];
+                current_tissue.delete_icon.attr('x',module.svg_text.svg_text.attr('x')+module.svg_ellipse.attr('rx')-32).attr('y',module.svg_text.svg_text.attr('y')-16);
+            }
+            current_tissue.delete_icon.animate({'opacity':1}, AnimationFast);
+        } else
+            current_tissue.delete_icon.animate({'opacity':0}, AnimationFast);
+        
         // Only do it if there is a line
-        if (typeof current_tissue.current_edge == 'undefined')
-            return;
-        var x2 = e.pageX - parseInt($('#tissue').css('left'));
-        var y2 = e.pageY - parseInt($('#tissue').css('top'));
-        var x1 = current_tissue.current_edge.x, y1 = current_tissue.current_edge.y;
-        var offset_x, offset_y;
-        if (x2>x1)
-            offset_x = -1;
-        else
-            offset_x = 1;
-        if (y2>y1)
-            offset_y = -1;
-        else
-            offset_y = 1;
-        current_tissue.current_edge.line.attr('path', 'M' + x1 + ' ' + y1 + 'L' + (x2 + offset_x) + ' ' + (y2 + offset_y));
+        if (typeof current_tissue.current_edge != 'undefined') {
+            var x2 = e.pageX - parseInt($('#tissue').css('left'));
+            var y2 = e.pageY - parseInt($('#tissue').css('top'));
+            var x1 = current_tissue.current_edge.x, y1 = current_tissue.current_edge.y;
+            var offset_x, offset_y;
+            if (x2>x1)
+                offset_x = -1;
+            else
+                offset_x = 1;
+            if (y2>y1)
+                offset_y = -1;
+            else
+                offset_y = 1;
+            current_tissue.current_edge.line.attr('path', 'M' + x1 + ' ' + y1 + 'L' + (x2 + offset_x) + ' ' + (y2 + offset_y));
+        };
     });
 
     // Finish the line when you release the button over an input/output
@@ -144,35 +161,25 @@ function Tissue() {
             var index = parseInt(e.target.id.substring(2));
             var node = current_tissue.nodes[index];
             // Make sure we are linking two different module
-            if (node.module_id==current_tissue.current_edge.first_module_id)
+            if (node.module_id==current_tissue.current_edge.first_node.module_id)
                 return;
             // Make sure we are linking an input and an output
-            if (node.io == current_tissue.current_edge.first_io)
+            if (node.io == current_tissue.current_edge.first_node.io)
                 return;
             // Make sure the type is the same
-            if (node.type!=current_tissue.current_edge.first_type)
+            if (node.type!=current_tissue.current_edge.first_node.type)
                 return;
             // Make sure that the input is not linked to an output already
-            var target_id;
+            var target_node;
             if (node.io == 1)
-                target_id = node.id;
+                target_node = node;
             else
-                target_id = current_tissue.current_edge.first_module_id;
-            console.info(target_id);
-
-            var stop_here = false;
-            $.each(current_tissue.edges, function(edge_index, edge) {
-                if (edge.target.id == target_id) {
-                    stop_here = true;
-                    return false;
-                }
-            });
-            if (stop_here)
-                return;
+                target_node = current_tissue.current_edge.first_node;
+            if (! $.isEmptyObject(target_node.edges))
+                return false;
 
             // If we passed everything, create an edge
-            var edge = new IoEdge(current_tissue.nodes[current_tissue.current_edge.first_node_id], node)
-            current_tissue.edges[edge.id] = edge;
+            var edge = new IoEdge(current_tissue.current_edge.first_node, node)
 
             // Update the graphical aspect
             current_tissue.updateGraph();
@@ -199,17 +206,9 @@ Tissue.prototype.addModule = function(module_name) {
     this.updateGraph();
 }
 
-Tissue.prototype.deleteModule = function(module) {
-    // Delete its SVG
-    module.svgDelete();
-
-    // Delete its nodes
-    $.each(module.io_nodes, function(node_id, node) {
-        delete current_tissue.nodes[node_id];
-    });
-
+Tissue.prototype.deleteModule = function(module_id) {
     // Delete the module
-    delete this.modules[module.id];
+    this.modules[module_id].delete();
     
     // Redraw everything
     this.updateGraph();
@@ -229,12 +228,19 @@ Tissue.prototype.updateGraph = function() {
     });
     // Add the module edges
     var edge_str_to_edge = {};
-    $.each(this.edges, function(edge_id, edge) {
-        var sametail = edge.source.module_id + edge.source.name,
-            samehead = edge.target.module_id + edge.target.name;
-        var edge_label = samehead + '_' + sametail;
+    $.each(this.nodes, function(node_id, node) {
+        $.each(node.edges, function(edge_id, edge) {
+            var sametail = edge.source.module_id + edge.source.name,
+                samehead = edge.target.module_id + edge.target.name;
+            var edge_label = samehead + '_' + sametail;
+            edge_str_to_edge[edge_label] = edge;
+        });
+    });
+     
+    $.each(edge_str_to_edge, function(edge_label, edge) {
+         var sametail = edge.source.module_id + edge.source.name,
+                samehead = edge.target.module_id + edge.target.name;
         dot_graph += edge.source.module_id + ' -> ' + edge.target.module_id + ' [ arrowhead = "none", label = "' + edge_label + '",  headlabel = "' + edge.source.name + '", taillabel = "' + edge.target.name + '", samehead = "' + samehead + '", sametail = "' + sametail + '" ];';
-        edge_str_to_edge[edge_label] = edge;
     });
     dot_graph += '}';
 
