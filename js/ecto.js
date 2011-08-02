@@ -128,12 +128,16 @@ function Tissue() {
         if (typeof current_tissue.current_edge == 'undefined')
             return;
         var is_io = false;
-        $.each($(e.target).attr('class').split(/\s+/), function(key, class_name) {
-            if ((class_name=='node_input') || (class_name=='node_output')) {
-                is_io = true;
-                return false;
-            }
-        });
+        var classes = $(e.target).attr('class');
+        // Check if we landed on a node_input/node_output
+        if (typeof classes != 'undefined') {
+            $.each(classes.split(/\s+/), function(key, class_name) {
+                if ((class_name=='node_input') || (class_name=='node_output')) {
+                    is_io = true;
+                    return false;
+                }
+            });
+        }
 
         // If we landed on an IoNode, check if it is a valid connection
         if (is_io) {
@@ -147,6 +151,23 @@ function Tissue() {
                 return;
             // Make sure the type is the same
             if (node.type!=current_tissue.current_edge.first_type)
+                return;
+            // Make sure that the input is not linked to an output already
+            var target_id;
+            if (node.io == 1)
+                target_id = node.id;
+            else
+                target_id = current_tissue.current_edge.first_module_id;
+            console.info(target_id);
+
+            var stop_here = false;
+            $.each(current_tissue.edges, function(edge_index, edge) {
+                if (edge.target.id == target_id) {
+                    stop_here = true;
+                    return false;
+                }
+            });
+            if (stop_here)
                 return;
 
             // If we passed everything, create an edge
@@ -165,7 +186,7 @@ function Tissue() {
 
 Tissue.prototype.addModule = function(module_name) {
     // Create the newmodule to add to the tissue
-    var module = new Module(EctoModules[module_name]);
+    var module = new Module(EctoModules[module_name], this);
     var current_tissue = this;
     this.modules[module.id] = module;
     
@@ -199,7 +220,7 @@ Tissue.prototype.deleteModule = function(module) {
 Tissue.prototype.updateGraph = function() {
     // Build the dot formated string that defines the graph
     var dot_graph = 'digraph dot_graph { rankdir=TD; size="8,6";node [shape = circle]; ';
-    var current_tissue = this;    
+    var current_tissue = this;
 
     // Add the modules
     $.each(this.modules, function(module_id, module) {

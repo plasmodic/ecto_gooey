@@ -39,16 +39,13 @@ function ModuleBase(raw_module) {
 
 /** A Module is an abstract class containing info about how an ecto module works
  */
-function Module(base_module) {
+function Module(base_module, tissue) {
     // This is a string
     var current_module = this;
     this.name = base_module.name;
     this.id = Module.prototype.id;
+    this.tissue = tissue;
     ++Module.prototype.id;
-
-    this.hierarchy = 0;
-    this.parents = [];
-    this.children = [];
 
     // Copy the inputs/outputs/params
     this.params = base_module.params;
@@ -56,18 +53,23 @@ function Module(base_module) {
 
     this.io_nodes = {};
     $.each(base_module.inputs, function(index,input) {
-        var node = new IoNode(input,1,module_id);
+        var node = new IoNode(input,1,module_id,tissue);
         current_module.io_nodes[node.id] = node;
     });
 
     $.each(base_module.outputs, function(index,output) {
-        var node = new IoNode(output,-1,module_id);
+        var node = new IoNode(output,-1,module_id,tissue);
         current_module.io_nodes[node.id] = node;
     });
     
-    // Deal with the central node
-    this.svg_text = undefined;
-    this.svg_ellipse = undefined;
+    // Create the main node ellipse
+    var width = tissue.raphael.width,
+        height = tissue.raphael.height;
+    
+    this.svg_ellipse = tissue.raphael.ellipse(Math.random()*width/2,Math.random()*height/2,Math.random()*width,Math.random()*height);
+    
+    // Create the main node text
+    this.svg_text = new ModuleName(this.name,tissue);
 };
 
 /** Function used to display better some memebers in the toString function
@@ -107,12 +109,6 @@ Module.prototype.toString = function() {
  */ 
 Module.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,translation_y) {
     var ellipse = new_svg.find('ellipse');
-    
-    // First, make sure the SVG has been created
-    if (typeof this.svg_ellipse == "undefined") {
-        this.svgCreate(new_svg,tissue,scale,translation_x,translation_y);
-        return;
-    }
 
     // Update the main node ellipse
     var cx = scale*(parseInt(ellipse.attr('cx')) + translation_x),
@@ -122,11 +118,7 @@ Module.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,transla
     this.svg_ellipse.animate({cx: cx, cy: cy, rx: rx, ry: ry}, AnimationSlow);
 
     // Update the main node text
-    var text = new_svg.find('text');
-    var x = scale*(parseInt(text.attr('x')) + translation_x),
-        y = scale*(parseInt(text.attr('y')) + translation_y);
-    this.svg_text.animate({x: x, y: y}, AnimationSlow);
-    this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
+    this.svg_text.svgUpdate(new_svg,scale,translation_x,translation_y);
 
     // Update the nodes that do not belong to links
     var unused_io_nodes = {};
@@ -134,12 +126,12 @@ Module.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,transla
         if ($.isEmptyObject(node.edges))
             unused_io_nodes[node_id] = node;
     });
-    this.svgUpdateUnusedIo(unused_io_nodes, cx, cy);
+    this.svgUpdateUnusedIo(unused_io_nodes, cx, cy, rx, ry);
 };
 
 /** Update the SVG for the nodes that have not been used yet
  */
-Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy) {
+Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy, rx, ry) {
     // Count the inputs and outputs
     var n_io = {};
     n_io[-1] = 0;
@@ -151,7 +143,7 @@ Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy) {
     // Display the different nodes on a circle
     var io_index = {},
         angle_step = {},
-        radius = parseFloat(this.svg_ellipse.attr('rx'))/2;
+        radius = rx/2;
     var offset = 0.5;
     io_index[-1] = offset;
     io_index[1] = offset;
@@ -171,50 +163,11 @@ Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy) {
     });
 };
 
-/** Create the SVG for a newly initialized module
- */ 
-Module.prototype.svgCreate = function(new_svg,tissue,scale,translation_x,translation_y) {
-    var ellipse = new_svg.find('ellipse');
-    var AnimationSlow = 600;
-    var AnimationFast = 200;
-
-    // Create the main node ellipse
-    var cx = scale*(parseInt(ellipse.attr('cx')) + translation_x),
-        cy = scale*(parseInt(ellipse.attr('cy')) + translation_y),
-        rx = scale*ellipse.attr('rx'),
-        ry = scale*ellipse.attr('ry');
-    this.svg_ellipse = tissue.raphael.ellipse(cx,cy,rx,ry);
-    this.svg_ellipse.attr('opacity',0).animate({opacity: 1}, AnimationSlow);
-    
-    // Create the IO nodes
-    $.each(this.io_nodes, function(node_id, node) {
-        node.svg_circle = tissue.raphael.circle(cx,cy,10);
-        node.svg_circle.toFront();
-        if (node.io == 1)
-            node.svg_circle.node.setAttribute("class",'node_input');
-        else
-            node.svg_circle.node.setAttribute("class",'node_output');
-        node.svg_circle.node.id = 'io' + node.id;
-        node.svg_circle.attr('opacity',0).animate({opacity: 1}, AnimationSlow);
-    });
-
-    // Create the main node text
-    var text = new_svg.find('text');
-    var x = scale*(parseInt(text.attr('x')) + translation_x),
-        y = scale*(parseInt(text.attr('y')) + translation_y);
-    this.svg_text = tissue.raphael.text(x,y,text[0].textContent);
-    this.svg_text.attr('opacity',0).animate({opacity: 1}, AnimationSlow);
-    this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
-    this.svg_text.toFront();
-
-    this.svgUpdateUnusedIo(this.io_nodes, cx, cy);
-};
-
 Module.prototype.svgDelete = function() {
     $.each(module.io_nodes, function(node_id, node) {
         node.svgDelete();
     });
-    this.svg_text.animate({'opacity':0}, AnimationFast).remove();
+    this.svg_text.svgDelete();
     this.svg_ellipse.animate({'opacity':0}, AnimationFast).remove();
 };
 
@@ -226,7 +179,7 @@ Module.prototype.id = 0;
  * io: 1 for input, -1 for output
  * module_id: the id of the module that the node belongs to
  */
-function IoNode(node_raw,io,module_id) {
+function IoNode(node_raw,io,module_id,tissue) {
     var current_io_node = this;
     $.each(node_raw, function(key, value) {
         current_io_node[key] = value;
@@ -237,8 +190,18 @@ function IoNode(node_raw,io,module_id) {
     // Contains IoEdge's;
     this.edges = {};
     this.module_id = module_id;
+
+    // Create the text
     this.svg_text = undefined;
-    this.svg_circle = undefined;
+    
+    // Create the circle
+    this.svg_circle = tissue.raphael.circle(Math.random()*tissue.width,Math.random()*tissue.height,10);
+    this.svg_circle.toFront();
+    if (this.io == 1)
+        this.svg_circle.node.setAttribute("class",'node_input');
+    else
+        this.svg_circle.node.setAttribute("class",'node_output');
+    this.svg_circle.node.id = 'io' + this.id;
 };
 
 IoNode.prototype.svgDelete = function() {
@@ -253,7 +216,8 @@ IoNode.prototype.svgUpdate = function(x,y) {
     //TODO
     //if (typeof this.svg_text != 'undefined')
       //  this.svg_text.animate({'x':x, 'y':y}, AnimationSlow);
-    this.svg_circle.animate({'cx':x, 'cy':y}, AnimationSlow);
+    this.svg_circle.animate({'cx':x, 'cy':y, 'opacity':1}, AnimationSlow);
+    this.svg_circle.toFront();
 };
 
 IoNode.prototype.x = function() {
@@ -322,6 +286,30 @@ IoEdge.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,transla
 };
 
 IoEdge.prototype.id = 0;
+
+////////////////////////////////////////////////////////////////////////////////
+
+function ModuleName(text,tissue) {
+    var width = tissue.raphael.width,
+        height = tissue.raphael.height;
+    // Create the main node text
+    this.svg_text = tissue.raphael.text(Math.random()*width,Math.random()*height,text);
+    this.svg_text.attr('opacity',0);
+    this.svg_text.toFront();
+};
+
+ModuleName.prototype.svgDelete = function() {
+    this.svg_text.animate({'opacity':0}, AnimationFast).remove();
+}
+
+ModuleName.prototype.svgUpdate = function(new_svg,scale,translation_x,translation_y) {
+    var text = new_svg.find('text');
+    var x = scale*(parseInt(text.attr('x')) + translation_x),
+        y = scale*(parseInt(text.attr('y')) + translation_y);
+    this.svg_text.animate({x: x, y: y}, AnimationSlow);
+    this.svg_text.attr('font-size', Math.max(14,text.attr('font-size')*scale));
+    this.svg_text.attr('text', new_svg.find('text').text(0).textContent);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
