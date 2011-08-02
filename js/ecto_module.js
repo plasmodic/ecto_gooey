@@ -250,9 +250,8 @@ IoNode.prototype.svgDelete = function() {
 };
 
 IoNode.prototype.svgUpdate = function(x,y) {
-    console.info(this.svg_circle);
     //TODO
-    //if (typeof console.info(this.svg_text) != 'undefined')
+    //if (typeof this.svg_text != 'undefined')
       //  this.svg_text.animate({'x':x, 'y':y}, AnimationSlow);
     this.svg_circle.animate({'cx':x, 'cy':y}, AnimationSlow);
 };
@@ -307,7 +306,6 @@ IoEdge.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,transla
     // Deal with the nodes
     var point_source = path.getPointAtLength(0),
         point_target = path.getPointAtLength(path.pathLength);
-        console.info('x:' + point_source.x);
     this.source.svgUpdate(point_source.x, point_source.y);
     this.target.svgUpdate(point_target.x, point_target.y);
     

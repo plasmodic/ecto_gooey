@@ -128,7 +128,7 @@ function Tissue() {
         if (typeof current_tissue.current_edge == 'undefined')
             return;
         var is_io = false;
-        $.each(e.target.classList, function(key, class_name) {
+        $.each($(e.target).attr('class').split(/\s+/), function(key, class_name) {
             if ((class_name=='node_input') || (class_name=='node_output')) {
                 is_io = true;
                 return false;
@@ -220,9 +220,9 @@ Tissue.prototype.updateGraph = function() {
     // Ask the web server to build a new layout
     var post_answer = $.post(EctoBaseUrl + '/module/graph', {dot_graph: dot_graph}, function(data) {
         data = $(data).find('svg').find('g');
-        var scale_regex = /scale\(([.0-9]*)\)/i;
+        var scale_regex = /scale\(([.0-9]*) *([.0-9]*)\)/i;
         var scale = parseFloat(data.attr('transform').match(scale_regex)[1]);
-        var translation_regex = /translate\(([0-9]*), ([0-9]*)\)/i;
+        var translation_regex = /translate\(([0-9]*),* ([0-9]*)\)/i;
 
         var translation_x = parseInt(data.attr('transform').match(translation_regex)[1]),
             translation_y = parseInt( data.attr('transform').match(translation_regex)[2]);
