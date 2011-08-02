@@ -62,8 +62,10 @@ function Tissue() {
     this.delete_icon.attr('opacity',0);
     this.delete_icon.node.setAttribute('class','trash_image');
     this.delete_icon.toFront();
-    $(this.delete_icon.node).bind('click', function(e) {
+    $(this.delete_icon.node).click(function(e) {
+        // When clicking on the icon, delete the module and hide the icon
         current_tissue.deleteModule(current_tissue.hovered_module_id);
+        current_tissue.delete_icon.animate({opacity:0}, AnimationFast);
     });
 
     // Make sure that when you hover the inputs/outputs, you show what they are

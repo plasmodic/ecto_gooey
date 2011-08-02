@@ -6,9 +6,9 @@ from os import curdir, sep
 import pkgutil
 import string,cgi,time
 import ecto
-from ecto_opencv import highgui, calib, features2d
 import dot2svg
 import urlparse
+import sys
 
 class MyHandler(BaseHTTPRequestHandler):
 
@@ -22,6 +22,7 @@ class MyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             
             # List the different shared object of ecto_opencv
+            # TODO ls of sys.path for ecto_*.so ?
             for module in ['ecto_opencv']:
                 m = __import__(module)
                 ms = [(module,m)]
@@ -42,7 +43,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 for property_name, property in [ ('inputs', module.inputs), ('outputs', module.outputs), ('params', module.params) ]:
                     module_info[property_name] = [ {'name': tendril.key(), 'doc': tendril.data().doc, 'type': tendril.data().type_name, 'has_default': tendril.data().has_default, 'user_supplied': tendril.data().user_supplied, 'required': tendril.data().required, 'dirty': tendril.data().dirty} for tendril in property ]
                 module_infos.append(module_info)
-            print json.dumps(module_infos)
+            #print json.dumps(module_infos)
             self.wfile.write(json.dumps(module_infos))
             return
         elif path.startswith('/module/graph'):

@@ -346,23 +346,56 @@ function ecto_initialize_modules() {
     $('#modules').html('');
 
     $.getJSON(EctoBaseUrl + '/module/list', function(data) {
-    //$('#modules').append(String(data)).append(String(data["inputs"]));
-    $.each(data, function (index, raw_module) {
+        //$('#modules').append(String(data)).append(String(data["inputs"]));
+        // First, separate the modules according to their namespaces
+        var main_level = {modules: [], sub_levels: {}};
+        $.each(data, function (index, raw_module) {
+            var hierarchy = raw_module.name.split('::');
+            var current_level = main_level;
+            hierarchy.pop();
+            $.each(hierarchy, function (index, sub_hierarchy) {
+                if (!(sub_hierarchy in current_level.sub_levels))
+                    current_level.sub_levels[sub_hierarchy] = {modules: [], sub_levels: {}};
+                current_level = current_level.sub_levels[sub_hierarchy];
+            });
+            current_level.modules.push(raw_module);
+        });
+        // Process each level and put it in a tree view
+        //$('#modules').append('<ul/>');
+        AddModuleToTree($('#modules'), 'opencv', main_level);
+        $('#modules').jstree({"plugins": ["themes", "html_data"]});
+    });
+};
+
+function AddModuleToTree(tree, name, level) {
+    // First add each subtree
+    tree.append($('<a></a>')
+            .text(name)
+            .attr('href', 'javascript:void(0)'));
+    var sub_tree = $('<ul/>');
+    if (!$.isEmptyObject(level.sub_levels)) {
+        $.each(level.sub_levels, function (sub_level_name, sub_level) {
+            var sub_sub_tree = $('<li/>');
+            AddModuleToTree(sub_sub_tree, sub_level_name, sub_level);
+            sub_tree.append(sub_sub_tree);
+        });
+    }
+
+    // Then add each module
+    $.each(level.modules, function (index, raw_module) {
         var module = new ModuleBase(raw_module);
         // Add the module to the list of modules
         EctoModules[module.name] = module;
-        
-        // Update the displayed list of modules
-        $('#modules').append($('<a></a>')
+        var a = $('<li><a></a></li>');
+        a.children('a')
             .text(module.name)
             .addClass('ecto_module')
             .attr('id', 'ecto_' + module.name)
             .attr('href', 'javascript:void(0)')
             .click(function() {
                 MainTissue.addModule(module.name);
-            })
-        );
-        $('#modules').append('</br>');
+            });
+        sub_tree.append(a);
     });
-  });
+    tree.append(sub_tree);
 };
