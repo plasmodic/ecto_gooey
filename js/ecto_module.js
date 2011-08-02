@@ -250,6 +250,11 @@ IoNode.prototype.svgDelete = function() {
 };
 
 IoNode.prototype.svgUpdate = function(x,y) {
+    console.info(this.svg_circle);
+    //TODO
+    //if (typeof console.info(this.svg_text) != 'undefined')
+      //  this.svg_text.animate({'x':x, 'y':y}, AnimationSlow);
+    this.svg_circle.animate({'cx':x, 'cy':y}, AnimationSlow);
 };
 
 IoNode.prototype.x = function() {
@@ -300,19 +305,22 @@ IoEdge.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,transla
     path.scale(scale,scale,0,0);
     
     // Deal with the nodes
-    this.source.svgUpdate();
-    this.target.svgUpdate();
+    var point_source = path.getPointAtLength(0),
+        point_target = path.getPointAtLength(path.pathLength);
+        console.info('x:' + point_source.x);
+    this.source.svgUpdate(point_source.x, point_source.y);
+    this.target.svgUpdate(point_target.x, point_target.y);
     
     // Deal with the path
     if (typeof this.svg_path == 'undefined') {
       // add a new path
         this.svg_path = tissue.raphael.path('M' + this.source.x() + ' ' + this.source.y() + 'L' + this.target.x() + ' ' + this.target.y());
+        this.svg_path.toBack();
     }
     // morph the old path
     this.svg_path.animate({'path': path.attr('path'), 'opacity': 1}, AnimationSlow, function() {
         path.remove();
     });
-    console.info(this.svg_path);
 };
 
 IoEdge.prototype.id = 0;

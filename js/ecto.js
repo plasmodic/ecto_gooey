@@ -209,8 +209,10 @@ Tissue.prototype.updateGraph = function() {
     // Add the module edges
     var edge_str_to_edge = {};
     $.each(this.edges, function(edge_id, edge) {
-        var edge_label = edge.source.module_id + edge.source.name + '_' + edge.target.module_id + edge.target.name;
-        dot_graph += edge.source.module_id + ' -> ' + edge.target.module_id + ' [ arrowhead = "none", label = "' + edge_label + '",  headlabel = "' + edge.source.name + '", taillabel = "' + edge.target.name + '" ];';
+        var sametail = edge.source.module_id + edge.source.name,
+            samehead = edge.target.module_id + edge.target.name;
+        var edge_label = samehead + '_' + sametail;
+        dot_graph += edge.source.module_id + ' -> ' + edge.target.module_id + ' [ arrowhead = "none", label = "' + edge_label + '",  headlabel = "' + edge.source.name + '", taillabel = "' + edge.target.name + '", samehead = "' + samehead + '", sametail = "' + sametail + '" ];';
         edge_str_to_edge[edge_label] = edge;
     });
     dot_graph += '}';
