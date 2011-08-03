@@ -23,26 +23,26 @@ class MyHandler(BaseHTTPRequestHandler):
             
             # List the different shared object of ecto_opencv
             # TODO ls of sys.path for ecto_*.so ?
-            for module in ['ecto_opencv']:
-                m = __import__(module)
-                ms = [(module,m)]
-                for loader, module_name, is_pkg in  pkgutil.walk_packages(m.__path__):
-                    #print loader,module_name,is_pkg
-                    module = loader.find_module(module_name).load_module(module_name)
-                    ms.append((module_name,module))
-
-            # list the different modules
-            ecto_cells = []
-            for module_name,x in ms:
-                ecto_cells += ecto.list_ecto_module(x)
-
-            # loop over each module and get info about them
             module_infos = []
-            for module in ecto_cells:
-                module_info = {'name': module.name()}
-                for property_name, property in [ ('inputs', module.inputs), ('outputs', module.outputs), ('params', module.params) ]:
-                    module_info[property_name] = [ {'name': tendril.key(), 'doc': tendril.data().doc, 'type': tendril.data().type_name, 'has_default': tendril.data().has_default, 'user_supplied': tendril.data().user_supplied, 'required': tendril.data().required, 'dirty': tendril.data().dirty} for tendril in property ]
-                module_infos.append(module_info)
+            for module_name in ['ecto_opencv']:
+                m = __import__(module_name)
+                ms = [(module_name,m)]
+                for loader, sub_module_name, is_pkg in  pkgutil.walk_packages(m.__path__):
+                    #print loader,sub_module_name,is_pkg
+                    module = loader.find_module(sub_module_name).load_module(sub_module_name)
+                    ms.append((sub_module_name,module))
+
+                # list the different modules
+                for sub_module_name,x in ms:
+                    ecto_cells = ecto.list_ecto_module(x)
+
+                    # loop over each module and get info about them
+                    for cell in ecto_cells:
+                        module_info = {'name': cell.name(), 'hierarchy': [module_name,sub_module_name]}
+                        for property_name, property in [ ('inputs', cell.inputs), ('outputs', cell.outputs), ('params', cell.params) ]:
+                            module_info[property_name] = [ {'name': tendril.key(), 'doc': tendril.data().doc, 'type': tendril.data().type_name, 'has_default': tendril.data().has_default, 'user_supplied': tendril.data().user_supplied, 'required': tendril.data().required, 'dirty': tendril.data().dirty} for tendril in property ]
+                        module_infos.append(module_info)
+                        print module_info
             #print json.dumps(module_infos)
             self.wfile.write(json.dumps(module_infos))
             return

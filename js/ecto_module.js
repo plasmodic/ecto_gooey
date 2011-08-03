@@ -19,8 +19,8 @@ function ModuleBase(raw_module) {
     // This is a string
     var current_module = this;
     // Strip out the hierarchy from the module
-    this.hierarchy = raw_module.name.split('::');
-    this.name = this.hierarchy.pop();
+    this.hierarchy = raw_module.hierarchy;
+    this.name = raw_module.name;
 
     // This is an associative array where the key is the name of the input\
     this.inputs = {};
@@ -350,10 +350,8 @@ function ecto_initialize_modules() {
         // First, separate the modules according to their namespaces
         var main_level = {modules: [], sub_levels: {}};
         $.each(data, function (index, raw_module) {
-            var hierarchy = raw_module.name.split('::');
             var current_level = main_level;
-            hierarchy.pop();
-            $.each(hierarchy, function (index, sub_hierarchy) {
+            $.each(raw_module.hierarchy, function (index, sub_hierarchy) {
                 if (!(sub_hierarchy in current_level.sub_levels))
                     current_level.sub_levels[sub_hierarchy] = {modules: [], sub_levels: {}};
                 current_level = current_level.sub_levels[sub_hierarchy];
