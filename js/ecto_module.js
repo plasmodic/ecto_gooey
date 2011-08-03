@@ -382,7 +382,7 @@ function ecto_initialize_modules() {
         });
         // Process each level and put it in a tree view
         AddModuleToTree($('#modules'), 'opencv', main_level);
-        $('#modules').jstree({"plugins": ["themes", "html_data"]});
+        $('#modules').jstree({"plugins": ["themes", "html_data"], "themes": {"theme":"apple", "dots":true, "icons": false}});
     });
 };
 
