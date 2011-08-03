@@ -13,6 +13,21 @@ function EscapeHtml(input) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/** Function to make text unelectable */
+$.fn.extend({disableSelection: function() {
+    this.each(function() {
+        if (typeof this.onselectstart != 'undefined') {
+            this.onselectstart = function() { return false; };
+        } else if (typeof this.style.MozUserSelect != 'undefined') {
+            this.style.MozUserSelect = 'none';
+        } else {
+            this.onmousedown = function() { return false; };
+        }
+    });
+}});
+
+////////////////////////////////////////////////////////////////////////////////
+
 /** A Module is an abstract class containing info about how an ecto module works
  */
 function ModuleBase(raw_module) {
@@ -20,7 +35,9 @@ function ModuleBase(raw_module) {
     var current_module = this;
     // Strip out the hierarchy from the module
     this.hierarchy = raw_module.hierarchy;
-    this.name = raw_module.name;
+    // Remove :: as that can be problematic for graphviz
+    var hierarchy = raw_module.name.split('::');
+    this.name = hierarchy.pop();
 
     // This is an associative array where the key is the name of the input\
     this.inputs = {};
@@ -322,7 +339,12 @@ function ModuleName(text,tissue) {
     this.svg_text.attr('opacity',0);
     this.svg_text.node.setAttribute('class', 'module_name');
     $(this.svg_text.node).children().attr('class', 'module_name');
+    // Make sure it appears above the rest
     this.svg_text.toFront();
+    // Make sure it does not get selected when dragging the mouse
+    $(this.svg_text.node).disableSelection();
+    $(this.svg_text.node).attr('pointer-events', 'none');
+    $(this.svg_text.node).children().attr('pointer-events', 'none');
 };
 
 ModuleName.prototype.svgDelete = function() {
@@ -359,7 +381,6 @@ function ecto_initialize_modules() {
             current_level.modules.push(raw_module);
         });
         // Process each level and put it in a tree view
-        //$('#modules').append('<ul/>');
         AddModuleToTree($('#modules'), 'opencv', main_level);
         $('#modules').jstree({"plugins": ["themes", "html_data"]});
     });
