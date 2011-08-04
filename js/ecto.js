@@ -55,6 +55,7 @@ function Tissue() {
     this.raphael = Raphael(200, 0, width, height);
     this.raphael.canvas.setAttribute("id",'tissue');
     this.hovered_text = [];
+    this.blinking_nodes = {};
     
     // Add the icon for deleting a module
     this.delete_icon = this.raphael.image('image/trash.png', 100, 100, 32, 32);
@@ -106,9 +107,27 @@ function Tissue() {
         current_tissue.current_edge.x = x;
         current_tissue.current_edge.y = y;
         current_tissue.current_edge.first_node = node;
+        
+        // Figure out the matching nodes
+        $.each(current_tissue.nodes, function(node_id, other_node) {
+            // Make sure we are linking two different module
+            if (node.module_id == other_node.module_id)
+                return;
+            // Make sure we are linking an input and an output
+            if (node.io == other_node.io)
+                return;
+            // Make sure the type is the same
+            if (node.type != other_node.type)
+                return;
+            current_tissue.blinking_nodes[other_node.id] = other_node;
+        });
+
+        // Make all those nodes blink
+        $.each(current_tissue.blinking_nodes, function(node_id,node) {
+            current_tissue.BlinkNode(node);
+        });
     });
 
-            
     // From now on, when we move the mouse, the line also moves
     $(document).mousemove(function (e) {
         // Check if we still need to show the delete_icon
@@ -125,6 +144,7 @@ function Tissue() {
         
         // Only do it if there is a line
         if (typeof current_tissue.current_edge != 'undefined') {
+            // Move the potential connection
             var x2 = e.pageX - parseInt($('#tissue').css('left'));
             var y2 = e.pageY - parseInt($('#tissue').css('top'));
             var x1 = current_tissue.current_edge.x, y1 = current_tissue.current_edge.y;
@@ -162,15 +182,10 @@ function Tissue() {
         if (is_io) {
             var index = parseInt(e.target.id.substring(2));
             var node = current_tissue.nodes[index];
-            // Make sure we are linking two different module
-            if (node.module_id==current_tissue.current_edge.first_node.module_id)
+            // Check if that node is a potential target
+            if (!(node.id in current_tissue.blinking_nodes))
                 return;
-            // Make sure we are linking an input and an output
-            if (node.io == current_tissue.current_edge.first_node.io)
-                return;
-            // Make sure the type is the same
-            if (node.type!=current_tissue.current_edge.first_node.type)
-                return;
+
             // Make sure that the input is not linked to an output already
             var target_node;
             if (node.io == 1)
@@ -190,6 +205,13 @@ function Tissue() {
         // Delete the line
         current_tissue.current_edge.line.remove();
         current_tissue.current_edge = undefined;
+        
+        // Have the blinking nodes stop blinking
+        $.each(current_tissue.blinking_nodes, function(node_id, node) {
+            node.svg_circle.stop();
+            node.svg_circle.attr('opacity',1);
+        });
+        current_tissue.blinking_nodes = {};
     });
 };
 
@@ -214,6 +236,17 @@ Tissue.prototype.deleteModule = function(module_id) {
     
     // Redraw everything
     this.updateGraph();
+}
+
+Tissue.prototype.BlinkNode = function(node) {
+    // Have the node blink
+    var current_tissue = this;
+    node.svg_circle.attr('opacity',1);
+    node.svg_circle.animate({opacity:0}, 500, function() {
+        node.svg_circle.animate({opacity:1}, 500, function() {
+            current_tissue.BlinkNode(node);
+        });
+    });
 }
 
 /** Use graphviz to update the hierarchy of the modules
