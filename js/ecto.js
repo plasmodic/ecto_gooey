@@ -119,12 +119,10 @@ function Tissue() {
             // Make sure the type is the same
             if (node.type != other_node.type)
                 return;
+            // Store that node
             current_tissue.blinking_nodes[other_node.id] = other_node;
-        });
-
-        // Make all those nodes blink
-        $.each(current_tissue.blinking_nodes, function(node_id,node) {
-            current_tissue.BlinkNode(node);
+            // Make that node blink
+            current_tissue.BlinkNode(other_node);
         });
     });
 
@@ -233,7 +231,10 @@ Tissue.prototype.addModule = function(module_name) {
 Tissue.prototype.deleteModule = function(module_id) {
     // Delete the module
     this.modules[module_id].delete();
-    
+
+    // Hide the delete icon
+    current_tissue.delete_icon.animate({'opacity':0}, AnimationFast);
+
     // Redraw everything
     this.updateGraph();
 }
