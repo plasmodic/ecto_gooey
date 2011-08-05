@@ -40,10 +40,10 @@ function EscapeHtml(input) {
 
 /** The class responsible for linking and displaying modules
  */ 
-function Tissue() {
+function Tissue(tissue_top,tissue_left, tissue_width) {
     var current_tissue = this;
-    var width = 800,
-        height = 600;
+    var tissue_width = 800,
+        tissue_height = 600;
     // All the nodes that constitute the tissue
     this.nodes = {};
 
@@ -52,7 +52,7 @@ function Tissue() {
     // The line that is dragged from one node to the next, if any
     this.current_edge = undefined;
 
-    this.raphael = Raphael(200, 0, width, height);
+    this.raphael = Raphael(tissue_left, tissue_top, tissue_width, tissue_height);
     this.raphael.canvas.setAttribute("id",'tissue');
     this.hovered_text = [];
     this.blinking_nodes = {};
@@ -336,15 +336,20 @@ Tissue.prototype.HideHoveredText = function (current_tissue) {
 
 /** Initialize the tissue: where the modules will be displayed and linked
  */
-function ecto_initialize_tissue() {
-     MainTissue = new Tissue();
+function EctoInitializeTissue(top, left) {
+     MainTissue = new Tissue(top, left);
 }
 
 /** Initialize the page and different structures
  */
 function ecto_initialize() {
-    ecto_initialize_modules();
-    ecto_initialize_tissue();
+    EctoInitializeModules();
+    var top = 10,
+        tissue_left = 200,
+        tissue_width = 600,
+        param_width = 100;
+    EctoInitializeTissue(top, tissue_left, tissue_width);
+    EctoInitializeParameters(top,tissue_left+tissue_width, param_width);
 
     //page_resize();
 }
@@ -353,7 +358,7 @@ function ecto_initialize() {
 
 // Initialize the data at the beginning
 $(document).ready(function() {
-    $.getScript(EctoBaseUrl + '/js/ecto_module.js', function() {
+    $.getScript(EctoBaseUrl + '/js/ecto/module.js', function() {
         ecto_initialize();
     }).error(function(x,e){
             if(x.status==0){
