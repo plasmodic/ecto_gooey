@@ -82,14 +82,9 @@ function Tissue() {
             current_tissue.hovered_text.push(text);
         });
     // Delete what an IoNode is when the mouse is not over it
-    $('#tissue .node_input,.node_output').live('mouseout',
-        function () {
-            $.each(current_tissue.hovered_text, function(index, text) {
-                text.animate({opacity:0},AnimationSlow,function() {
-                    this.remove();
-                });
-            });
-        });
+    $('#tissue .node_input,.node_output').live('mouseout', function() {
+        current_tissue.HideHoveredText(current_tissue);
+    });
 
     // Create a line when you grab an input/output node
     $('#tissue .node_input,.node_output').live('mousedown', function () {
@@ -323,6 +318,20 @@ Tissue.prototype.updateGraph = function() {
             }});
 }
 
+Tissue.prototype.HideHoveredText = function (current_tissue) {
+    $.each(current_tissue.hovered_text, function(index, text) {
+        text.animate({opacity:0},AnimationSlow,function() {
+            this.remove();
+        });
+    });
+    /*var new_hovered_text = [];
+    $.each(current_tissue.hovered_text, function(index, text) {
+        if (!text.removed)
+            new_hovered_text.push(text);
+    });
+    current_tissue.hovered_text = new_hovered_text;*/
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Initialize the tissue: where the modules will be displayed and linked
@@ -340,6 +349,7 @@ function ecto_initialize() {
     //page_resize();
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 // Initialize the data at the beginning
 $(document).ready(function() {

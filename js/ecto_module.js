@@ -50,6 +50,7 @@ function ModuleBase(raw_module) {
         current_module.outputs[output.name] = output;
     });
     $.each(raw_module.params, function(index, param) {
+        param.value = undefined;
         current_module.params[param.name] = param;
     });
 };
@@ -90,9 +91,14 @@ function Module(base_module, tissue) {
 
     // Create the main node text
     this.svg_text = new ModuleName(this.name,tissue);
+    
+    // When we click one or the other, the displayed parameters should change
+    $($(this.svg_ellipse.node)).add($(this.svg_text.svg_text.node)).click(function(e) {
+        DisplayParameters(current_module.id, current_module.params);
+    });
 };
 
-/** Function used to display better some memebers in the toString function
+/** Function used to display better some members in the toString function
  */ 
 Module.prototype.toStringHelper = function(input, message) {
     var message = '</br>&nbsp;&nbsp;';
@@ -362,7 +368,7 @@ ModuleName.prototype.svgUpdate = function(new_svg,scale,translation_x,translatio
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Get the list of modules from the server
+/** Get the list of modules from the server and display them as a tree
  */
 function ecto_initialize_modules() {
     $('#modules').html('');
@@ -382,7 +388,7 @@ function ecto_initialize_modules() {
         });
         // Process each level and put it in a tree view
         AddModuleToTree($('#modules'), 'opencv', main_level);
-        $('#modules').jstree({"plugins": ["themes", "html_data"], "themes": {"theme":"apple", "dots":true, "icons": false}});
+        $('#modules').jstree({"plugins": ["themes", "search", "html_data"], "themes": {"theme":"apple", "dots":true, "icons":false}, "search": {"show_only_matches":true}});
     });
 };
 
