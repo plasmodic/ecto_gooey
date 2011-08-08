@@ -216,6 +216,7 @@ function IoNode(node_raw,io,module_id,tissue) {
     $.each(node_raw, function(key, value) {
         current_io_node[key] = value;
     });
+    this.type = CleanType(this.type);
     this.io = io;
     this.id = IoNode.prototype.id;
     ++IoNode.prototype.id;

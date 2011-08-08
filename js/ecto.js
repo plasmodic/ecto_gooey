@@ -228,7 +228,7 @@ Tissue.prototype.deleteModule = function(module_id) {
     this.modules[module_id].delete();
 
     // Hide the delete icon
-    current_tissue.delete_icon.animate({'opacity':0}, AnimationFast);
+    this.delete_icon.animate({'opacity':0}, AnimationFast);
 
     // Redraw everything
     this.updateGraph();

@@ -1,6 +1,6 @@
-html, body {
+html, body, table {
     font-family: Lucida, sans-serif;
-    font-size: 90%;
+    font-size: 10pt;
     margin: 0px 10px;
     padding: 0px;
 }
@@ -39,6 +39,16 @@ html, body {
     background-color: blue;
 }
 
+/** CSS for the parameter table */
+table.parameter {
+    border-collapse:collapse;
+}
+
+tr.parameter {
+    border:1px solid #000;
+}
+
+/* The following is usefull to not select text when drawing a connection */
 ::selection {
     background: rgb(255,255,255);
 }
