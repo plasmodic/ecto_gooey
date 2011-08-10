@@ -39,6 +39,15 @@ html, body, table {
     background-color: blue;
 }
 
+/** CSS for the info section */
+.info_title {
+    background: blue;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
 /** CSS for the parameter table */
 table.parameter {
     border-collapse:collapse;
@@ -47,6 +56,8 @@ table.parameter {
 tr.parameter {
     border:1px solid #000;
 }
+
+
 
 /* The following is usefull to not select text when drawing a connection */
 ::selection {

@@ -32,7 +32,6 @@ function CleanType(type_str) {
                 ++comp_count;
             if (type_str.charAt(index) == '>')
                 --comp_count;
-                console.info(comp_count);
             if (comp_count<0) {
                 type_str = type_str.slice(0,allocator_index) + type_str.slice(index-1);
                 break;
@@ -41,18 +40,18 @@ function CleanType(type_str) {
         }
     }
 
-    return $('<div/>').text(type_str).html();
+    return type_str;
 }
 ////////////////////////////////////////////////////////////////////////////////
 
 function DisplayParameters(module, params) {
-    // Display info about the module
+    var module_params = $('#module_params')
 
     // Delete the previous table
-    $('#module_params table').remove();
+    module_params.empty();
 
     // Create a new table containing the parameters
-    var table_html = '<div><span class="info_title">' + module.name + '</span><br/><table class="parameter"><tbody>';
+    var table_html = '<span class="info_title">' + module.name + '</span><br/><table class="parameter"><tbody>';
     $.each(params, function(key, param) {
         table_html += '<tr class="parameter"><td colspan="2">' + param.doc + '</td></tr>';
         table_html += '<tr class="parameter"><td>' + param.name + '</td><td>';
@@ -73,9 +72,12 @@ function DisplayParameters(module, params) {
     // Create a new table containing the nodes
     table_html += '</tbody></table><br/><br/><span class="info_title">Tendrils</span><table class="parameter"><tbody>';
     $.each(module.io_nodes, function(node_id, node) {
-        table_html += '<tr class="parameter_io"><td>' + node.name + ':' + CleanType(node.type) + '</td></tr>';
+        table_html += '<tr class="parameter_io"><td>' + node.name + ': ' + EscapeHtml(node.type) + '</td></tr>';
     });
 
     table_html += '</tbody></table>';
-    $('#module_params').append(table_html);
+    module_params.append(table_html);
+
+    // Stylize the tables a bit
+    module_params.children('.info_title').corner();
 };
