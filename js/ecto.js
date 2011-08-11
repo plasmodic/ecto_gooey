@@ -7,14 +7,7 @@ var MainWidth = 1200;
 var AnimationFast = 200;
 var AnimationSlow = 600;
 
-function DebugObject(obj) {
-  str='';
-  for(prop in obj)
-  {
-    str+=prop + " value :"+ obj[prop]+"\n";
-  }
-  return(str);
-}
+////////////////////////////////////////////////////////////////////////////////
 
 $.fn.listHandlers = function(events, outputFunction) {
     return this.each(function(i){
@@ -40,21 +33,26 @@ function EscapeHtml(input) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+function EctoInitializePlayer(left) {
+    $('#player').css({'position' : 'absolute', 'left': left});
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 /** Initialize the page and different structures
  */
-function ecto_initialize() {
+function EctoInitialize() {
     // Figure out the width of the main components
-    var document_width = $(document).width();
     var top = 40,
         tree_width = 250,
         param_width = 300,
         tissue_width = Math.max(500, MainWidth - param_width - tree_width);
-    $("#main_div").css({"position":"absolute","left":document_width/2-MainWidth/2});
+    EctoInitializePlayer(tree_width/2);
     EctoInitializeModules(top,tree_width);
-    EctoInitializeTissue(top, tree_width, tissue_width);
-    EctoInitializeParameters(top,MainWidth-param_width, param_width);
+    EctoInitializeTissue(0, tree_width, tissue_width);
+    EctoInitializeParameters(0,MainWidth-param_width, param_width);
 
-    //page_resize();
+    $(window).resize();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +60,7 @@ function ecto_initialize() {
 // Initialize the data at the beginning
 $(document).ready(function() {
     $.getScript(EctoBaseUrl + '/js/ecto/module.js', function() {
-        ecto_initialize();
+        EctoInitialize();
     }).error(function(x,e){
             if(x.status==0){
             alert('You are offline!!\n Please Check Your Network.');
@@ -76,7 +74,8 @@ $(document).ready(function() {
             alert('Request Time out.');
             }else {
             alert('An error happened: ' + e + ' with status ' + x.status + '.\n'+x.responseText);
-            }});
+            }
+    });
 });
 
 $(window).resize( function() {
