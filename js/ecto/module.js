@@ -389,7 +389,7 @@ function EctoInitializeModules(top, width) {
         });
     });
 
-    //$('#module_tree').attr('style', 'position: absolute; left: 0px; top: ' + top + 'px; width:' + width);
+    $('#module_tree').css({'position': 'absolute', 'top': top, 'width': width});
 };
 
 function AddModuleToTree(tree, name, level) {

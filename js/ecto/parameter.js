@@ -51,10 +51,10 @@ function DisplayParameters(module, params) {
     module_params.empty();
 
     // Create a new table containing the parameters
-    var table_html = '<span class="info_title">' + module.name + '</span><br/><table class="parameter"><tbody>';
+    var table_html = '<span class="info_title">' + module.name + '</span><br/><br/>' + '<span class="info_title">Parameters</span><table class="parameter"><tbody>';
     $.each(params, function(key, param) {
-        table_html += '<tr class="parameter"><td colspan="2">' + param.doc + '</td></tr>';
-        table_html += '<tr class="parameter"><td>' + param.name + '</td><td>';
+        table_html += '<tr class="info_table_doc"><td colspan="2">' + param.doc + '</td></tr>';
+        table_html += '<tr class="info_table_detail"><td>' + param.name + '</td><td>';
         if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
             table_html += '<input type="text" onblur="javascript:UpdateParams(' +
                 module.id + ', \'' + param.name + '\', this.value)" ';
@@ -63,16 +63,21 @@ function DisplayParameters(module, params) {
                 table_html += 'value="' + value + '"';
             table_html += '/>';
         } else {
-            console.info(key);
-            console.info(param);
+            alert(param.type + ' type not supported, for key ' + key + '. Ask Vincent');
+            console.info(param);v
         }
         table_html += '</td></tr>';
     });
 
     // Create a new table containing the nodes
-    table_html += '</tbody></table><br/><br/><span class="info_title">Tendrils</span><table class="parameter"><tbody>';
+    table_html += '</tbody></table><br/><span class="info_title">Tendrils</span><table class="parameter"><tbody>';
     $.each(module.io_nodes, function(node_id, node) {
-        table_html += '<tr class="parameter"><td>' + node.name + ': ' + EscapeHtml(node.type) + '</td></tr>';
+        table_html += '<tr class="info_table_doc"><td colspan="2">';
+        if (node.doc == '')
+            table_html += 'no doc for tendril \"' + node.name + '\"';
+        else
+            table_html += node.doc;
+        table_html += '</td></tr><tr class="info_table_detail"><td>' + node.name + ': ' + EscapeHtml(node.type) + '</td></tr>';
     });
 
     table_html += '</tbody></table>';
