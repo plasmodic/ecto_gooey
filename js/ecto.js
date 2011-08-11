@@ -2,6 +2,8 @@
 var EctoBaseUrl = location.href.split('/', 3).join('/');
 // The main tissue on which the modules will be linked
 var MainTissue;
+// The width of what the working zone should be
+var MainWidth = 1200;
 var AnimationFast = 200;
 var AnimationSlow = 600;
 
@@ -42,8 +44,7 @@ function EscapeHtml(input) {
  */ 
 function Tissue(tissue_top,tissue_left, tissue_width) {
     var current_tissue = this;
-    var tissue_width = 800,
-        tissue_height = 600;
+    var tissue_height = 600;
     // All the nodes that constitute the tissue
     this.nodes = {};
 
@@ -52,8 +53,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
     // The line that is dragged from one node to the next, if any
     this.current_edge = undefined;
 
-    this.raphael = Raphael(tissue_left, tissue_top, tissue_width, tissue_height);
-    this.raphael.canvas.setAttribute("id",'tissue');
+    this.raphael = Raphael('main_div', tissue_width, tissue_height);
+    $(this.raphael.canvas).attr('id','tissue').css({'position':'absolute', 'left':tissue_left, 'top': tissue_top});
     this.hovered_text = [];
     this.blinking_nodes = {};
     
@@ -336,20 +337,23 @@ Tissue.prototype.HideHoveredText = function (current_tissue) {
 
 /** Initialize the tissue: where the modules will be displayed and linked
  */
-function EctoInitializeTissue(top, left) {
-     MainTissue = new Tissue(top, left);
+function EctoInitializeTissue(top, left, width) {
+     MainTissue = new Tissue(top, left, width);
 }
 
 /** Initialize the page and different structures
  */
 function ecto_initialize() {
-    EctoInitializeModules();
-    var top = 10,
-        tissue_left = 200,
-        tissue_width = 600,
-        param_width = 100;
-    EctoInitializeTissue(top, tissue_left, tissue_width);
-    EctoInitializeParameters(top,tissue_left+tissue_width, param_width);
+    // Figure out the width of the main components
+    var top = 0,
+        tree_width = 250,
+        param_width = 300,
+        tissue_width = Math.max(500, MainWidth - param_width - tree_width);
+    $('#main_div').css({'width': MainWidth, 'margin-left': 'auto', 'margin-right': 'auto' });
+    EctoInitializeModules(top,tree_width);
+    console.info($('#main_div').css('left'));
+    EctoInitializeTissue(top, tree_width, tissue_width);
+    EctoInitializeParameters(top,MainWidth-param_width, param_width);
 
     //page_resize();
 }
@@ -374,4 +378,9 @@ $(document).ready(function() {
             }else {
             alert('An error happened: ' + e + ' with status ' + x.status + '.\n'+x.responseText);
             }});
+});
+
+$(window).resize( function() {
+    var width = $(document).width();
+    $("#main_div").css({"position":"absolute","left":width/2-MainWidth/2});
 });

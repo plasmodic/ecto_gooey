@@ -9,10 +9,10 @@ function UpdateParams(module_id, name, value) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var ModuleParams = $('#module_params');
+var ModuleParams = $('#module_parameters');
 
 function EctoInitializeParameters(top,left,width) {
-    $('#module_params').attr('style', 'position: absolute; left: ' + left + 'px; top: ' + top + 'px; width:200').attr('width', width);
+    $('#module_parameters').attr('style', 'position: absolute; left: ' + left + 'px; top: ' + top + 'px; width:' + width);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,7 +45,7 @@ function CleanType(type_str) {
 ////////////////////////////////////////////////////////////////////////////////
 
 function DisplayParameters(module, params) {
-    var module_params = $('#module_params')
+    var module_params = $('#module_parameters');
 
     // Delete the previous table
     module_params.empty();
@@ -72,7 +72,7 @@ function DisplayParameters(module, params) {
     // Create a new table containing the nodes
     table_html += '</tbody></table><br/><br/><span class="info_title">Tendrils</span><table class="parameter"><tbody>';
     $.each(module.io_nodes, function(node_id, node) {
-        table_html += '<tr class="parameter_io"><td>' + node.name + ': ' + EscapeHtml(node.type) + '</td></tr>';
+        table_html += '<tr class="parameter"><td>' + node.name + ': ' + EscapeHtml(node.type) + '</td></tr>';
     });
 
     table_html += '</tbody></table>';

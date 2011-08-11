@@ -365,8 +365,8 @@ ModuleName.prototype.svgUpdate = function(new_svg,scale,translation_x,translatio
 
 /** Get the list of modules from the server and display them as a tree
  */
-function EctoInitializeModules() {
-    $('#modules').html('');
+function EctoInitializeModules(top, width) {
+    $('#module_tree').html('');
 
     $.getJSON(EctoBaseUrl + '/module/list', function(data) {
         //$('#modules').append(String(data)).append(String(data["inputs"]));
@@ -382,9 +382,14 @@ function EctoInitializeModules() {
             current_level.modules.push(raw_module);
         });
         // Process each level and put it in a tree view
-        AddModuleToTree($('#modules'), 'opencv', main_level);
-        $('#modules').jstree({"plugins": ["themes", "search", "html_data"], "themes": {"theme":"apple", "dots":true, "icons":false}, "search": {"show_only_matches":true}});
+        AddModuleToTree($('#module_tree'), 'opencv', main_level);
+        $('#module_tree').jstree({"plugins": ["ui", "themes", "search", "html_data"], "themes": {"theme":"apple", "dots":true, "icons":false}, "search": {"show_only_matches":true}}).bind("select_node.jstree", function(e, data) {
+            // Make sure clicking on a node opens the tree
+            $('#module_tree').jstree("toggle_node",data.rslt.obj);
+        });
     });
+
+    //$('#module_tree').attr('style', 'position: absolute; left: 0px; top: ' + top + 'px; width:' + width);
 };
 
 function AddModuleToTree(tree, name, level) {
