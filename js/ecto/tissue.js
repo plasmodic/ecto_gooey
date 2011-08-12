@@ -98,8 +98,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
         // Only do it if there is a line
         if (typeof current_tissue.current_edge != 'undefined') {
             // Move the potential connection
-            var x2 = e.pageX - parseInt($('#tissue').css('left'));
-            var y2 = e.pageY - parseInt($('#tissue').css('top'));
+            var x2 = e.pageX - parseInt($('#tissue').offset().left);
+            var y2 = e.pageY - parseInt($('#tissue').offset().top);
             var x1 = current_tissue.current_edge.x, y1 = current_tissue.current_edge.y;
             var offset_x, offset_y;
             if (x2>x1)
