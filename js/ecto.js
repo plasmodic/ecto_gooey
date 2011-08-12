@@ -4,35 +4,23 @@ var EctoBaseUrl = location.href.split('/', 3).join('/');
 var MainTissue;
 // The width of what the working zone should be
 var MainWidth = 1200;
+// The length, in milliseconds, of a fast animation (just like jQuery)
 var AnimationFast = 200;
+// The length, in milliseconds, of a slow animation (just like jQuery)
 var AnimationSlow = 600;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-$.fn.listHandlers = function(events, outputFunction) {
-    return this.each(function(i){
-        var elem = this,
-            dEvents = $(this).data('events');
-        if (!dEvents) {return;}
-        $.each(dEvents, function(name, handler){
-            if((new RegExp('^(' + (events === '*' ? '.+' : events.replace(',','|').replace(/^on/i,'')) + ')$' ,'i')).test(name)) {
-               $.each(handler, function(i,handler){
-                   outputFunction(elem, '\n' + i + ': [' + name + '] : ' + handler );
-               });
-           }
-        });
-    });
-};
-
-
-////////////////////////////////////////////////////////////////////////////////
-
+/** Function to escape a string for HTML
+ */
 function EscapeHtml(input) {
     return $('<div/>').text(input).html();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/** Function to initaliaze the graph player on the page
+ */
 function EctoInitializePlayer(left) {
     $('#player').css({'position' : 'absolute', 'left': left});
 }
@@ -57,13 +45,14 @@ function EctoInitialize() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Initialize the data at the beginning
+/** Initialize the data once the document is loaded
+ */
 $(document).ready(function() {
     $.getScript(EctoBaseUrl + '/js/ecto/module.js', function() {
         EctoInitialize();
     }).error(function(x,e){
             if(x.status==0){
-            alert('You are offline!!\n Please Check Your Network.');
+            alert('Cannot connect to the ecto web server.');
             }else if(x.status==404){
             alert('Requested URL not found.');
             }else if(x.status==500){
@@ -78,6 +67,8 @@ $(document).ready(function() {
     });
 });
 
+/** Function to esecute whenever the browser is resized
+ */
 $(window).resize( function() {
     var width = $(document).width();
     $("#main_div").css({"position":"absolute","left":width/2-MainWidth/2});
