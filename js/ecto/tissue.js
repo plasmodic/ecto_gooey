@@ -209,7 +209,7 @@ Tissue.prototype.BlinkNode = function(node) {
  */
 Tissue.prototype.updateGraph = function() {
     // Build the dot formated string that defines the graph
-    var dot_graph = 'digraph dot_graph { rankdir=TD; size="8,6";node [shape = circle]; ';
+    var dot_graph = 'digraph dot_graph { rankdir=TD; size="' + parseInt($(this.raphael.canvas).attr('width'))/100 + ',' + parseInt($(this.raphael.canvas).attr('height'))/100 + '";node [shape = circle]; dpi=100;';
     var current_tissue = this;
 
     // Add the modules
