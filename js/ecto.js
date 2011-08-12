@@ -19,23 +19,15 @@ function EscapeHtml(input) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Function to initaliaze the graph player on the page
- */
-function EctoInitializePlayer(left) {
-    $('#player').css({'position' : 'absolute', 'left': left});
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 /** Initialize the page and different structures
  */
 function EctoInitialize() {
     // Figure out the width of the main components
     var top = 40,
-        tree_width = 250,
+        tree_width = 200,
         param_width = 300,
         tissue_width = Math.max(500, MainWidth - param_width - tree_width);
-    EctoInitializePlayer(tree_width/2);
+    EctoInitializePlayer(tree_width);
     EctoInitializeModules(top,tree_width);
     EctoInitializeTissue(0, tree_width, tissue_width);
     EctoInitializeParameters(0,MainWidth-param_width, param_width);
