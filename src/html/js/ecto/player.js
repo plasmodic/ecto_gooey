@@ -1,30 +1,4 @@
-// File implementing the execution of a plasm, as well as its serialization
-
-function TissueToJson(tissue) {
-        // Add the modules
-        return '';
-    $.each(this.modules, function(module_id, module) {
-        dot_graph += module_id + ' [ label = ' + current_tissue.modules[module_id].name + ' ];';
-        //dot_graph += module_id + ' ';
-    });
-    // Add the module edges
-    var edge_str_to_edge = {};
-    $.each(this.nodes, function(node_id, node) {
-        $.each(node.edges, function(edge_id, edge) {
-            var sametail = edge.source.module_id + edge.source.name,
-                samehead = edge.target.module_id + edge.target.name;
-            var edge_label = samehead + '_' + sametail;
-            edge_str_to_edge[edge_label] = edge;
-        });
-    });
-     
-    $.each(edge_str_to_edge, function(edge_label, edge) {
-         var sametail = edge.source.module_id + edge.source.name,
-                samehead = edge.target.module_id + edge.target.name;
-        dot_graph += edge.source.module_id + ' -> ' + edge.target.module_id + ' [ arrowhead = "none", label = "' + edge_label + '",  headlabel = "' + edge.source.name + '", taillabel = "' + edge.target.name + '", samehead = "' + samehead + '", sametail = "' + sametail + '" ];';
-    });
-    dot_graph += '}';
-}
+// File implementing the execution of a plasm
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +12,8 @@ function EctoInitializePlayer(width) {
     
     // Bind it to send info about the graph to the server
     $('#button_play').click(function() {
-        var json_plasm = TissueToJson(MainTissue);
+        var json_plasm = MainTissue.ToJson();
+        console.info(json_plasm);
         $('#button_play').hide();
         $('#button_pause').show();
         
@@ -49,7 +24,7 @@ function EctoInitializePlayer(width) {
 
     // Bind it to send info about the graph to the server
     $('#button_pause').click(function() {
-        var tissue_json = TissueToJson(MainTissue);
+        var tissue_json = MainTissue.ToJson();
         $('#button_play').show();
         $('#button_pause').hide();
     });

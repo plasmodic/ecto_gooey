@@ -40,7 +40,7 @@ function EctoInitialize() {
 /** Initialize the data once the document is loaded
  */
 $(document).ready(function() {
-    $.getScript(EctoBaseUrl + '/js/ecto/module.js', function() {
+    $.getScript(EctoBaseUrl + '/js/ecto/cell.js', function() {
         EctoInitialize();
     }).error(function(x,e){
             if(x.status==0){

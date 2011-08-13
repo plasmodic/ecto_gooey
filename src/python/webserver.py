@@ -21,15 +21,15 @@ class EctoWebServer(BaseHTTPRequestHandler):
         """
         path = urlparse.urlparse(self.path).path
         print path
-        if path == '/module/list':
-            # list the different modules
+        if path == '/cell/list':
+            # list the different cells
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             
             # List the different shared object of ecto_opencv
             # TODO ls of sys.path for ecto_*.so ?
-            module_infos = []
+            cell_infos = []
             for module_name in ['ecto_opencv']:
                 m = __import__(module_name)
                 ms = [(module_name,m)]
@@ -38,19 +38,25 @@ class EctoWebServer(BaseHTTPRequestHandler):
                     module = loader.find_module(sub_module_name).load_module(sub_module_name)
                     ms.append((sub_module_name,module))
 
-                # list the different modules
+                # list the different cells
                 for sub_module_name,x in ms:
                     ecto_cells = ecto.list_ecto_module(x)
 
-                    # loop over each module and get info about them
+                    # loop over each cell and get info about them
                     for cell in ecto_cells:
-                        module_info = {'name': cell.name(), 'hierarchy': [module_name,sub_module_name]}
+                        cell_info = {'name': cell.name(), 'hierarchy':
+                            [module_name,sub_module_name]}
                         for property_name, property in [ ('inputs', cell.inputs), ('outputs', cell.outputs), ('params', cell.params) ]:
-                            module_info[property_name] = [ {'name': tendril.key(), 'doc': tendril.data().doc, 'type': tendril.data().type_name, 'has_default': tendril.data().has_default, 'user_supplied': tendril.data().user_supplied, 'required': tendril.data().required, 'dirty': tendril.data().dirty} for tendril in property ]
-                        module_infos.append(module_info)
-                        print module_info
-            #print json.dumps(module_infos)
-            self.wfile.write(json.dumps(module_infos))
+                            cell_info[property_name] = [ {'name': tendril.key(),
+                                'doc': tendril.data().doc, 'type':
+                                tendril.data().type_name, 'has_default':
+                                tendril.data().has_default, 'user_supplied':
+                                tendril.data().user_supplied, 'required':
+                                tendril.data().required, 'dirty':
+                                tendril.data().dirty} for tendril in property ]
+                        cell_infos.append(cell_info)
+
+            self.wfile.write(json.dumps(cell_infos))
             return
         else:
             # simply send back the file that is asked for
@@ -97,12 +103,17 @@ class EctoWebServer(BaseHTTPRequestHandler):
         path = urlparse.urlparse(self.path).path
         print path
 
-        if path == '/module/graph':
+        if path == '/cell/graph':
             # get the DOT file and convert it to SVG
             #dot_graph = ecto_json.JsonToDot(postvars['json_plasm'][0])
             # TODO
-            dot_graph = postvars['dot_graph'][0]
-            svg_graph = dot2svg.dot2svg(dot_graph)
+            json_plasm = postvars['json_plasm'][0]
+            if postvars.has_key('width') and postvars.has_key('height'):
+                svg_graph = dot2svg.dot2svg(ecto_json.JsonToDot(json_plasm,
+                    int(postvars['width'][0]), int(postvars['height'][0])))
+            else:
+                svg_graph = dot2svg.dot2svg(ecto_json.JsonToDot(json_plasm))
+
             svg_graph = svg_graph[svg_graph.find('<svg'):]
 
             self.wfile.write(svg_graph)

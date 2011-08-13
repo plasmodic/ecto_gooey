@@ -225,42 +225,17 @@ Tissue.prototype.BlinkNode = function(node) {
 /** Use graphviz to update the hierarchy of the cells
  */
 Tissue.prototype.updateGraph = function() {
-    // Build the dot formated string that defines the graph
-    var dot_graph = 'digraph dot_graph { rankdir=TD; size="' + parseInt($(this.raphael.canvas).attr('width'))/100 + ',' + parseInt($(this.raphael.canvas).attr('height'))/100 + '";node [shape = circle]; dpi=100;';
     var current_tissue = this;
-
-    // Add the cells
-    $.each(this.cells, function(cell_id, cell) {
-        dot_graph += cell_id + ' [ label = ' +
-            current_tissue.cells[cell_id].name + ' ];';
-    });
-    // Add the cell edges
     var edge_str_to_edge = {};
-    $.each(this.nodes, function(node_id, node) {
-        $.each(node.edges, function(edge_id, edge) {
-            var sametail = edge.source.cell_id + edge.source.name,
-                samehead = edge.target.cell_id + edge.target.name;
-            var edge_label = samehead + '_' + sametail;
-            edge_str_to_edge[edge_label] = edge;
-        });
-    });
-     
-    $.each(edge_str_to_edge, function(edge_label, edge) {
-         var sametail = edge.source.cell_id + edge.source.name,
-                samehead = edge.target.cell_id + edge.target.name;
-        dot_graph += edge.source.cell_id + ' -> ' + edge.target.cell_id +
-            ' [ arrowhead = "none", label = "' + edge_label +
-            '",  headlabel = "' + edge.source.name + '", taillabel = "' +
-            edge.target.name + '", samehead = "' + samehead + '",sametail = "' +
-            sametail + '" ];';
-    });
-    dot_graph += '}';
+
+    // Build the dot formated string that defines the graph
+    var json_plasm = this.ToJson(edge_str_to_edge);
 
     // Ask the web server to build a new layout
-    var json_plasm = this.ToJson();
-    
-    var post_answer = $.post(EctoBaseUrl + '/cell/graph', {dot_graph:
-        dot_graph}, function(data) {
+    var post_answer = $.post(EctoBaseUrl + '/cell/graph', {json_plasm:
+        json_plasm, width: parseInt($(this.raphael.canvas).attr('width'))/100,
+        height: parseInt($(this.raphael.canvas).attr('height'))/100},
+        function(data) {
         data = $(data).find('svg').find('g');
         var scale_regex = /scale\(([.0-9]*) *([.0-9]*)\)/i;
         var scale = parseFloat(data.attr('transform').match(scale_regex)[1]);
@@ -318,14 +293,27 @@ Tissue.prototype.HideHoveredText = function (current_tissue) {
 /** Function converting a Tissue to json
  */
 Tissue.prototype.ToJson = function (edge_str_to_edge) {
-    var json_tissue = {cells: {}, edges: {}};
+    var do_string = true;
+    if (do_string)
+        var json_tissue = '{"cells": { ';
+    else
+        var json_tissue = {cells: {}, edges: {}};
 
     // Add the cells
-    $.each(this.cells, function(cell_id, cell) {
-        json_tissue['cells'][cell_id] = {type: cell.name, module:
-            cell.hierarchy[0], params: {}};
-    });
-
+    if (do_string) {
+        $.each(this.cells, function(cell_id, cell) {
+            json_tissue += '"' + cell_id + '":' + '{"type": "' + cell.name + 
+                '",' + '"module": "' + cell.hierarchy[0] + '", "params": {}},';
+        });
+        json_tissue = json_tissue.substring(0,json_tissue.length-1) + '}, ' +
+            '"edges": { ';
+    } else {
+        $.each(this.cells, function(cell_id, cell) {
+            json_tissue['cells'][cell_id] = {type: cell.name, module:
+                cell.hierarchy[0], params: {}};
+        });
+    }
+    
     // Add the cell edges
     if (typeof edge_str_to_edge == 'undefined')
         edge_str_to_edge = {};
@@ -337,14 +325,27 @@ Tissue.prototype.ToJson = function (edge_str_to_edge) {
             edge_str_to_edge[edge_label] = edge;
         });
     });
-     
-    $.each(edge_str_to_edge, function(edge_label, edge) {
-        var sametail = edge.source.cell_id + edge.source.name,
-                samehead = edge.target.cell_id + edge.target.name;
-        json_tissue['edges'][edge_label] = {id_out: edge.source.cell_id,
-            io_out: edge.source.name, id_in: edge.target.cell_id,
-            io_in: edge.target.name};
-    });
+    
+    if (do_string) {
+        $.each(edge_str_to_edge, function(edge_label, edge) {
+            var sametail = edge.source.cell_id + edge.source.name,
+                    samehead = edge.target.cell_id + edge.target.name;
+            json_tissue += '{"id_out": "' + edge.source.cell_id + '", ' +
+                '"io_out": "' + edge.source.name + '", "id_in": "' +
+                edge.target.cell_id + '", "io_in": "' + edge.target.name +
+                '"},';
+        });
+        json_tissue = json_tissue.substring(0,json_tissue.length-1) + '}}';
+    } else {
+        $.each(edge_str_to_edge, function(edge_label, edge) {
+            var sametail = edge.source.cell_id + edge.source.name,
+                    samehead = edge.target.cell_id + edge.target.name;
+            json_tissue['edges'][edge_label] = {id_out: edge.source.cell_id,
+                io_out: edge.source.name, id_in: edge.target.cell_id,
+                io_in: edge.target.name};
+        });
+    }
+
     return json_tissue;
 }
 
