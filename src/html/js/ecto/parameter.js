@@ -1,18 +1,17 @@
 /** Update a parameter
- * @param module_id the id of the module whose parameter is modified
+ * @param cell_id the id of the cell whose parameter is modified
  * @param name the name of the parameter that is modified
  * @param value the value of the parameter that is modified
  */
-function UpdateParams(module_id, name, value) {
-    MainTissue.modules[module_id].params[name].value = value;
+function UpdateParams(cell_id, name, value) {
+    MainTissue.cells[cell_id].params[name].value = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var ModuleParams = $('#module_parameters');
-
 function EctoInitializeParameters(top,left,width) {
-    $('#module_parameters').attr('style', 'position: absolute; left: ' + left + 'px; top: ' + top + 'px; width:' + width);
+    $('#cell_parameters').attr('style', 'position: absolute; left: ' + left +
+'px; top: ' + top + 'px; width:' + width);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,21 +43,23 @@ function CleanType(type_str) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-function DisplayParameters(module, params) {
-    var module_params = $('#module_parameters');
+function DisplayParameters(cell, params) {
+    var cell_params = $('#cell_parameters');
 
     // Delete the previous table
-    module_params.empty();
+    cell_params.empty();
 
     // Create a new table containing the parameters
-    var table_html = '<span class="info_title">' + module.name + '</span><br/><br/>' + '<span class="info_title">Parameters</span><table class="parameter"><tbody>';
+    var table_html = '<span class="info_title">' + cell.name +
+        '</span><br/><br/>' + '<span class="info_title">Parameters</span>' +
+        '<table class="parameter"><tbody>';
     $.each(params, function(key, param) {
         table_html += '<tr class="info_table_doc"><td colspan="2">' + param.doc + '</td></tr>';
         table_html += '<tr class="info_table_detail"><td>' + param.name + '</td><td>';
         if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
             table_html += '<input type="text" onblur="javascript:UpdateParams(' +
-                module.id + ', \'' + param.name + '\', this.value)" ';
-            var value = module.params[param.name].value;
+                cell.id + ', \'' + param.name + '\', this.value)" ';
+            var value = cell.params[param.name].value;
             if (typeof value != 'undefined')
                 table_html += 'value="' + value + '"';
             table_html += '/>';
@@ -71,7 +72,7 @@ function DisplayParameters(module, params) {
 
     // Create a new table containing the nodes
     table_html += '</tbody></table><br/><span class="info_title">Tendrils</span><table class="parameter"><tbody>';
-    $.each(module.io_nodes, function(node_id, node) {
+    $.each(cell.io_nodes, function(node_id, node) {
         table_html += '<tr class="info_table_doc"><td colspan="2">';
         if (node.doc == '')
             table_html += 'no doc for tendril \"' + node.name + '\"';
@@ -81,8 +82,8 @@ function DisplayParameters(module, params) {
     });
 
     table_html += '</tbody></table>';
-    module_params.append(table_html);
+    cell_params.append(table_html);
 
     // Stylize the tables a bit
-    module_params.children('.info_title').corner();
+    cell_params.children('.info_title').corner();
 };

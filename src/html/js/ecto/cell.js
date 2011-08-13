@@ -1,9 +1,5 @@
-// Contains the base of the URL
-var EctoBaseUrl = location.href.split('/', 3).join('/');
-// dictionary from a module name to the module object
-var EctoModules = {};
-var AnimationFast = 200;
-var AnimationSlow = 600;
+// dictionary from a cell name to the cell object
+var EctoCells = {};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -22,56 +18,57 @@ $.fn.extend({disableSelection: function() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** A Module is an abstract class containing info about how an ecto module works
+/** A Cell is an abstract class containing info about how an ecto cell works
  */
-function ModuleBase(raw_module) {
+function CellBase(raw_cell) {
     // This is a string
-    var current_module = this;
-    // Strip out the hierarchy from the module
-    this.hierarchy = raw_module.hierarchy;
+    var current_cell = this;
+    // Strip out the hierarchy from the cell
+    this.hierarchy = raw_cell.hierarchy;
     // Remove :: as that can be problematic for graphviz
-    var hierarchy = raw_module.name.split('::');
+    var hierarchy = raw_cell.name.split('::');
     this.name = hierarchy.pop();
 
     // This is an associative array where the key is the name of the input\
     this.inputs = {};
     this.outputs = {};
     this.params = {};
-    $.each(raw_module.inputs, function(index, input) {
-        current_module.inputs[input.name] = input;
+    $.each(raw_cell.inputs, function(index, input) {
+        current_cell.inputs[input.name] = input;
     });
-    $.each(raw_module.outputs, function(index, output) {
-        current_module.outputs[output.name] = output;
+    $.each(raw_cell.outputs, function(index, output) {
+        current_cell.outputs[output.name] = output;
     });
-    $.each(raw_module.params, function(index, param) {
+    $.each(raw_cell.params, function(index, param) {
         param.value = undefined;
-        current_module.params[param.name] = param;
+        current_cell.params[param.name] = param;
     });
 };
 
-/** A Module is an abstract class containing info about how an ecto module works
+/** A Cell is an abstract class containing info about how an ecto cell works
  */
-function Module(base_module, tissue) {
+function Cell(base_cell, tissue) {
     // This is a string
-    var current_module = this;
-    this.name = base_module.name;
-    this.id = Module.prototype.id;
+    var current_cell = this;
+    this.hierarchy = base_cell.hierarchy;
+    this.name = base_cell.name;
+    this.id = Cell.prototype.id;
     this.tissue = tissue;
-    ++Module.prototype.id;
+    ++Cell.prototype.id;
 
     // Copy the inputs/outputs/params
-    this.params = base_module.params;
-    var module_id = this.id;
+    this.params = base_cell.params;
+    var cell_id = this.id;
 
     this.io_nodes = {};
-    $.each(base_module.inputs, function(index,input) {
-        var node = new IoNode(input,1,module_id,tissue);
-        current_module.io_nodes[node.id] = node;
+    $.each(base_cell.inputs, function(index,input) {
+        var node = new IoNode(input,1,cell_id,tissue);
+        current_cell.io_nodes[node.id] = node;
     });
 
-    $.each(base_module.outputs, function(index,output) {
-        var node = new IoNode(output,-1,module_id,tissue);
-        current_module.io_nodes[node.id] = node;
+    $.each(base_cell.outputs, function(index,output) {
+        var node = new IoNode(output,-1,cell_id,tissue);
+        current_cell.io_nodes[node.id] = node;
     });
 
     // Create the main node ellipse
@@ -80,54 +77,55 @@ function Module(base_module, tissue) {
 
     this.svg_ellipse = tissue.raphael.ellipse(Math.random()*width/2,Math.random()*height/2,Math.random()*width,Math.random()*height);
     this.svg_ellipse.toBack();
-    this.svg_ellipse.node.setAttribute('class', 'module_center');
-    this.svg_ellipse.node.id = 'module' + this.id;
+    this.svg_ellipse.node.setAttribute('class', 'cell_center');
+    this.svg_ellipse.node.id = 'cell' + this.id;
 
     // Create the main node text
-    this.svg_text = new ModuleName(this.name,tissue);
+    this.svg_text = new CellName(this.name,tissue);
     
     // When we click one or the other, the displayed parameters should change
     $($(this.svg_ellipse.node)).add($(this.svg_text.svg_text.node)).click(function(e) {
-        DisplayParameters(current_module, current_module.params);
+        DisplayParameters(current_cell, current_cell.params);
     });
 };
 
 /** Function used to display better some members in the toString function
  */ 
-Module.prototype.toStringHelper = function(input, message) {
+Cell.prototype.toStringHelper = function(input, message) {
     var message = '</br>&nbsp;&nbsp;';
-    var module = this;
+    var cell = this;
     for (var member in input) {
         message += member + ': ' + $('<div/>').text(input[member]).html() + ', ';
     }
     return message;
 };
 
-/** Display the different members of the Module object
+/** Display the different members of the Cell object
  */ 
-Module.prototype.toString = function() {
+Cell.prototype.toString = function() {
     var message = '';
-    var module = this;
+    var cell = this;
     message += '<div>name: ' + this.name;
     message += '</br>inputs: ';
-    $.each(module.inputs, function(key, input) {
-        message += module.toStringHelper(input, message);
+    $.each(cell.inputs, function(key, input) {
+        message += cell.toStringHelper(input, message);
     });
     message += '</br>outputs: ';
-    $.each(module.outputs, function(key, output) {
-        message += module.toStringHelper(output, message);
+    $.each(cell.outputs, function(key, output) {
+        message += cell.toStringHelper(output, message);
     });
     message += '</br>params: ';
-    $.each(module.params, function(key, param) {
-        message += module.toStringHelper(param, message);
+    $.each(cell.params, function(key, param) {
+        message += cell.toStringHelper(param, message);
     });
     message += '</div></br>';
     return message;
 };
 
-/** Display the different members of the Module object
+/** Display the different members of the Cell object
  */ 
-Module.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,translation_y) {
+Cell.prototype.svgUpdate =
+function(new_svg,tissue,scale,translation_x,translation_y) {
     var ellipse = new_svg.find('ellipse');
 
     // Update the main node ellipse
@@ -151,7 +149,7 @@ Module.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,transla
 
 /** Update the SVG for the nodes that have not been used yet
  */
-Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy, rx, ry) {
+Cell.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy, rx, ry) {
     // Count the inputs and outputs
     var n_io = {};
     n_io[-1] = 0;
@@ -183,7 +181,7 @@ Module.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy, rx, ry) {
     });
 };
 
-Module.prototype.delete = function() {
+Cell.prototype.delete = function() {
     // Delete the nodes
     $.each(this.io_nodes, function(node_id, node) {
         node.delete();
@@ -193,19 +191,19 @@ Module.prototype.delete = function() {
     this.svg_text.svgDelete();
     this.svg_ellipse.animate({'opacity':0}, AnimationFast).remove();
 
-    // Delete it the modules from the database of modules
-    delete this.tissue.modules[this.id];
+    // Delete it the cells from the database of cells
+    delete this.tissue.cells[this.id];
 };
 
-Module.prototype.id = 0;
+Cell.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** An IoNode is one of the input/output nodes in the graph for a module
+/** An IoNode is one of the input/output nodes in the graph for a cell
  * io: 1 for input, -1 for output
- * module_id: the id of the module that the node belongs to
+ * cell_id: the id of the cell that the node belongs to
  */
-function IoNode(node_raw,io,module_id,tissue) {
+function IoNode(node_raw,io,cell_id,tissue) {
     var current_io_node = this;
     $.each(node_raw, function(key, value) {
         current_io_node[key] = value;
@@ -216,7 +214,7 @@ function IoNode(node_raw,io,module_id,tissue) {
     ++IoNode.prototype.id;
     // Contains IoEdge's;
     this.edges = {};
-    this.module_id = module_id;
+    this.cell_id = cell_id;
     this.tissue = tissue;
 
     // Create the text
@@ -269,7 +267,7 @@ IoNode.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** An IoEdge is an edge connecting two IoNode's from different modules
+/** An IoEdge is an edge connecting two IoNode's from different cells
  */
 function IoEdge(node_1,node_2) {
     if (node_1.io==1) {
@@ -332,14 +330,14 @@ IoEdge.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function ModuleName(text,tissue) {
+function CellName(text,tissue) {
     var width = tissue.raphael.width,
         height = tissue.raphael.height;
     // Create the main node text
     this.svg_text = tissue.raphael.text(Math.random()*width,Math.random()*height,text);
     this.svg_text.attr('opacity',0);
-    this.svg_text.node.setAttribute('class', 'module_name');
-    $(this.svg_text.node).children().attr('class', 'module_name');
+    this.svg_text.node.setAttribute('class', 'cell_name');
+    $(this.svg_text.node).children().attr('class', 'cell_name');
     // Make sure it appears above the rest
     this.svg_text.toFront();
     // Make sure it does not get selected when dragging the mouse
@@ -348,11 +346,12 @@ function ModuleName(text,tissue) {
     $(this.svg_text.node).children().attr('pointer-events', 'none');
 };
 
-ModuleName.prototype.svgDelete = function() {
+CellName.prototype.svgDelete = function() {
     this.svg_text.animate({'opacity':0}, AnimationFast).remove();
 }
 
-ModuleName.prototype.svgUpdate = function(new_svg,scale,translation_x,translation_y) {
+CellName.prototype.svgUpdate =
+function(new_svg,scale,translation_x,translation_y) {
     var text = new_svg.find('text');
     var x = scale*(parseInt(text.attr('x')) + translation_x),
         y = scale*(parseInt(text.attr('y')) + translation_y);
@@ -363,36 +362,44 @@ ModuleName.prototype.svgUpdate = function(new_svg,scale,translation_x,translatio
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Get the list of modules from the server and display them as a tree
+/** Get the list of cells from the server and display them as a tree
  */
-function EctoInitializeModules(top, width) {
-    $('#module_tree').html('');
+function EctoInitializeCells(top, width) {
+    $('#cell_tree').html('');
 
-    $.getJSON(EctoBaseUrl + '/module/list', function(data) {
-        //$('#modules').append(String(data)).append(String(data["inputs"]));
-        // First, separate the modules according to their namespaces
-        var main_level = {modules: [], sub_levels: {}};
-        $.each(data, function (index, raw_module) {
+    $.getJSON(EctoBaseUrl + '/cell/list', function(data) {
+        //$('#cells').append(String(data)).append(String(data["inputs"]));
+        // First, separate the cells according to their namespaces
+        var main_level = {cells: [], sub_levels: {}};
+        $.each(data, function (index, raw_cell) {
             var current_level = main_level;
-            $.each(raw_module.hierarchy, function (index, sub_hierarchy) {
-                if (!(sub_hierarchy in current_level.sub_levels))
-                    current_level.sub_levels[sub_hierarchy] = {modules: [], sub_levels: {}};
+            $.each(raw_cell.hierarchy, function (index, sub_hierarchy) {
+                if (!(sub_hierarchy in current_level.sub_levels)) {
+                    current_level.sub_levels[sub_hierarchy] = {cells: [],
+                        sub_levels: {}};
+                }
                 current_level = current_level.sub_levels[sub_hierarchy];
             });
-            current_level.modules.push(raw_module);
+            current_level.cells.push(raw_cell);
         });
         // Process each level and put it in a tree view
-        AddModuleToTree($('#module_tree'), 'opencv', main_level);
-        $('#module_tree').jstree({"plugins": ["ui", "themes", "search", "html_data"], "themes": {"theme":"apple", "dots":true, "icons":false}, "search": {"show_only_matches":true}}).bind("select_node.jstree", function(e, data) {
-            // Make sure clicking on a node opens the tree
-            $('#module_tree').jstree("toggle_node",data.rslt.obj);
-        });
+        AddCellToTree($('#cell_tree'), 'opencv', main_level);
+        $('#cell_tree').jstree({"plugins": ["ui", "themes", "search",
+                               "html_data"], "themes": {"theme":"apple",
+                               "dots":true, "icons":false},"search":
+                               {"show_only_matches":true}
+                               }).bind("select_node.jstree", function(e, data) {
+                                   // Make sure clicking on a node opens the
+                                   //tree
+                               $('#cell_tree').jstree("toggle_node",
+                                                      data.rslt.obj);
+                               });
     });
 
-    $('#module_tree').css({'position': 'absolute', 'top': top, 'width': width});
+    $('#cell_tree').css({'position': 'absolute', 'top': top, 'width': width});
 };
 
-function AddModuleToTree(tree, name, level) {
+function AddCellToTree(tree, name, level) {
     // First add each subtree
     tree.append($('<a></a>')
             .text(name)
@@ -401,24 +408,24 @@ function AddModuleToTree(tree, name, level) {
     if (!$.isEmptyObject(level.sub_levels)) {
         $.each(level.sub_levels, function (sub_level_name, sub_level) {
             var sub_sub_tree = $('<li/>');
-            AddModuleToTree(sub_sub_tree, sub_level_name, sub_level);
+            AddCellToTree(sub_sub_tree, sub_level_name, sub_level);
             sub_tree.append(sub_sub_tree);
         });
     }
 
-    // Then add each module
-    $.each(level.modules, function (index, raw_module) {
-        var module = new ModuleBase(raw_module);
-        // Add the module to the list of modules
-        EctoModules[module.name] = module;
+    // Then add each cell
+    $.each(level.cells, function (index, raw_cell) {
+        var cell = new CellBase(raw_cell);
+        // Add the cell to the list of cells
+        EctoCells[cell.name] = cell;
         var a = $('<li><a></a></li>');
         a.children('a')
-            .text(module.name)
-            .addClass('ecto_module')
-            .attr('id', 'ecto_' + module.name)
+            .text(cell.name)
+            .addClass('ecto_cell')
+            .attr('id', 'ecto_' + cell.name)
             .attr('href', 'javascript:void(0)')
             .click(function() {
-                MainTissue.addModule(module.name);
+                MainTissue.AddCell(cell.name);
             });
         sub_tree.append(a);
     });

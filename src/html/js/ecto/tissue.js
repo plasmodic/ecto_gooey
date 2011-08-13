@@ -1,5 +1,9 @@
+// Details the class containing info about the graph and its connections to the
+// GUI
 
-/** The class responsible for linking and displaying modules
+////////////////////////////////////////////////////////////////////////////////
+
+/** The class responsible for linking and displaying cells
  */ 
 function Tissue(tissue_top,tissue_left, tissue_width) {
     var current_tissue = this;
@@ -7,8 +11,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
     // All the nodes that constitute the tissue
     this.nodes = {};
 
-    // The list of modules building the tissue
-    this.modules = {};
+    // The list of cells building the tissue. Key:id, value: the cell
+    this.cells = {};
     // The line that is dragged from one node to the next, if any
     this.current_edge = undefined;
 
@@ -17,15 +21,15 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
     this.hovered_text = [];
     this.blinking_nodes = {};
     
-    // Add the icon for deleting a module
+    // Add the icon for deleting a cell
     this.delete_icon = this.raphael.image('image/trash.png', 100, 100, 32, 32);
-    this.hovered_module_id = undefined;
+    this.hovered_cell_id = undefined;
     this.delete_icon.attr('opacity',0);
     this.delete_icon.node.setAttribute('class','trash_image');
     this.delete_icon.toFront();
     $(this.delete_icon.node).click(function(e) {
-        // When clicking on the icon, delete the module and hide the icon
-        current_tissue.deleteModule(current_tissue.hovered_module_id);
+        // When clicking on the icon, delete the cell and hide the icon
+        current_tissue.DeleteCell(current_tissue.hovered_cell_id);
         current_tissue.delete_icon.animate({opacity:0}, AnimationFast);
     });
 
@@ -37,7 +41,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
             var x = parseInt(node.svg_circle.attr('cx')),
                 y = parseInt(node.svg_circle.attr('cy'));
 
-            var text = current_tissue.raphael.text(x+10,y+10,node.name + ' : ' + node.type);
+            var text = current_tissue.raphael.text(x+20,y+20,node.name + ' : ' +
+                node.type);
             text.node.setAttribute('class', 'hovered_text');
             current_tissue.hovered_text.push(text);
         });
@@ -57,7 +62,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
             y = parseInt(node.svg_circle.attr('cy'));
 
         current_tissue.current_edge = {};
-        current_tissue.current_edge.line = current_tissue.raphael.path('M' + x + ' ' + y + 'L' + x + ' ' + y);
+        current_tissue.current_edge.line = current_tissue.raphael.path('M' + x +
+            ' ' + y + 'L' + x + ' ' + y);
         current_tissue.current_edge.line.node.setAttribute('id', 'current_edge');
         current_tissue.current_edge.x = x;
         current_tissue.current_edge.y = y;
@@ -65,8 +71,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
         
         // Figure out the matching nodes
         $.each(current_tissue.nodes, function(node_id, other_node) {
-            // Make sure we are linking two different module
-            if (node.module_id == other_node.module_id)
+            // Make sure we are linking two different cells
+            if (node.cell_id == other_node.cell_id)
                 return;
             // Make sure we are linking an input and an output
             if (node.io == other_node.io)
@@ -84,12 +90,16 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
     // From now on, when we move the mouse, the line also moves
     $(document).mousemove(function (e) {
         // Check if we still need to show the delete_icon
-        if ($(e.target).is('.module_center, .trash_image, .module_name')) {
-            if ($(e.target).is('.module_center')) {
+        if ($(e.target).is('.cell_center, .trash_image, .cell_name')) {
+            if ($(e.target).is('.cell_center')) {
                 // reposition the icon
-                current_tissue.hovered_module_id = parseInt(e.target.id.substring(6));
-                var module = current_tissue.modules[current_tissue.hovered_module_id];
-                current_tissue.delete_icon.attr('x',module.svg_text.svg_text.attr('x')+module.svg_ellipse.attr('rx')-32).attr('y',module.svg_text.svg_text.attr('y')-16);
+                current_tissue.hovered_cell_id =
+                    parseInt(e.target.id.substring(4));
+                var cell = current_tissue.cells[current_tissue.hovered_cell_id];
+                current_tissue.delete_icon.attr('x',
+                    cell.svg_text.svg_text.attr('x')+
+                    cell.svg_ellipse.attr('rx')-32).attr('y',
+                    cell.svg_text.svg_text.attr('y')-16);
             }
             current_tissue.delete_icon.animate({'opacity':1}, AnimationFast);
         } else
@@ -110,7 +120,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
                 offset_y = -1;
             else
                 offset_y = 1;
-            current_tissue.current_edge.line.attr('path', 'M' + x1 + ' ' + y1 + 'L' + (x2 + offset_x) + ' ' + (y2 + offset_y));
+            current_tissue.current_edge.line.attr('path', 'M' + x1 + ' ' + y1 +
+                'L' + (x2 + offset_x) + ' ' + (y2 + offset_y));
         };
     });
 
@@ -168,14 +179,16 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
     });
 };
 
-Tissue.prototype.addModule = function(module_name) {
-    // Create the newmodule to add to the tissue
-    var module = new Module(EctoModules[module_name], this);
+////////////////////////////////////////////////////////////////////////////////
+
+Tissue.prototype.AddCell = function(cell_name) {
+    // Create the new cell to add to the tissue
+    var cell = new Cell(EctoCells[cell_name], this);
     var current_tissue = this;
-    this.modules[module.id] = module;
+    this.cells[cell.id] = cell;
     
     // Update all the nodes
-    $.each(module.io_nodes, function(node_id, node) {
+    $.each(cell.io_nodes, function(node_id, node) {
         current_tissue.nodes[node_id] = node;
     });
 
@@ -183,9 +196,11 @@ Tissue.prototype.addModule = function(module_name) {
     this.updateGraph();
 }
 
-Tissue.prototype.deleteModule = function(module_id) {
-    // Delete the module
-    this.modules[module_id].delete();
+////////////////////////////////////////////////////////////////////////////////
+
+Tissue.prototype.DeleteCell = function(cell_id) {
+    // Delete the cell
+    this.cells[cell_id].delete();
 
     // Hide the delete icon
     this.delete_icon.animate({'opacity':0}, AnimationFast);
@@ -205,38 +220,47 @@ Tissue.prototype.BlinkNode = function(node) {
     });
 }
 
-/** Use graphviz to update the hierarchy of the modules
+////////////////////////////////////////////////////////////////////////////////
+
+/** Use graphviz to update the hierarchy of the cells
  */
 Tissue.prototype.updateGraph = function() {
     // Build the dot formated string that defines the graph
     var dot_graph = 'digraph dot_graph { rankdir=TD; size="' + parseInt($(this.raphael.canvas).attr('width'))/100 + ',' + parseInt($(this.raphael.canvas).attr('height'))/100 + '";node [shape = circle]; dpi=100;';
     var current_tissue = this;
 
-    // Add the modules
-    $.each(this.modules, function(module_id, module) {
-        dot_graph += module_id + ' [ label = ' + current_tissue.modules[module_id].name + ' ];';
-        //dot_graph += module_id + ' ';
+    // Add the cells
+    $.each(this.cells, function(cell_id, cell) {
+        dot_graph += cell_id + ' [ label = ' +
+            current_tissue.cells[cell_id].name + ' ];';
     });
-    // Add the module edges
+    // Add the cell edges
     var edge_str_to_edge = {};
     $.each(this.nodes, function(node_id, node) {
         $.each(node.edges, function(edge_id, edge) {
-            var sametail = edge.source.module_id + edge.source.name,
-                samehead = edge.target.module_id + edge.target.name;
+            var sametail = edge.source.cell_id + edge.source.name,
+                samehead = edge.target.cell_id + edge.target.name;
             var edge_label = samehead + '_' + sametail;
             edge_str_to_edge[edge_label] = edge;
         });
     });
      
     $.each(edge_str_to_edge, function(edge_label, edge) {
-         var sametail = edge.source.module_id + edge.source.name,
-                samehead = edge.target.module_id + edge.target.name;
-        dot_graph += edge.source.module_id + ' -> ' + edge.target.module_id + ' [ arrowhead = "none", label = "' + edge_label + '",  headlabel = "' + edge.source.name + '", taillabel = "' + edge.target.name + '", samehead = "' + samehead + '", sametail = "' + sametail + '" ];';
+         var sametail = edge.source.cell_id + edge.source.name,
+                samehead = edge.target.cell_id + edge.target.name;
+        dot_graph += edge.source.cell_id + ' -> ' + edge.target.cell_id +
+            ' [ arrowhead = "none", label = "' + edge_label +
+            '",  headlabel = "' + edge.source.name + '", taillabel = "' +
+            edge.target.name + '", samehead = "' + samehead + '",sametail = "' +
+            sametail + '" ];';
     });
     dot_graph += '}';
 
     // Ask the web server to build a new layout
-    var post_answer = $.post(EctoBaseUrl + '/module/graph', {dot_graph: dot_graph}, function(data) {
+    var json_plasm = this.ToJson();
+    
+    var post_answer = $.post(EctoBaseUrl + '/cell/graph', {dot_graph:
+        dot_graph}, function(data) {
         data = $(data).find('svg').find('g');
         var scale_regex = /scale\(([.0-9]*) *([.0-9]*)\)/i;
         var scale = parseFloat(data.attr('transform').match(scale_regex)[1]);
@@ -249,9 +273,10 @@ Tissue.prototype.updateGraph = function() {
         var edge_id_to_svg = {};
         $.each($(data), function(index, g_object) {
             if ($(this).attr('class')=='node') {
-                var module_id = parseInt($(this).find('title')[0].textContent);
-                // Update the SVG of the module
-                current_tissue.modules[module_id].svgUpdate($(this), current_tissue, scale, translation_x, translation_y);
+                var cell_id = parseInt($(this).find('title')[0].textContent);
+                // Update the SVG of the cell
+                current_tissue.cells[cell_id].svgUpdate($(this), current_tissue,
+                    scale, translation_x, translation_y);
             } else if ($(this).attr('class')=='edge') {
                 $.each($(this).find('text'), function(text_index, text_obj) {
                     if (text_obj.textContent in edge_str_to_edge) {
@@ -278,23 +303,54 @@ Tissue.prototype.updateGraph = function() {
             }});
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 Tissue.prototype.HideHoveredText = function (current_tissue) {
     $.each(current_tissue.hovered_text, function(index, text) {
         text.animate({opacity:0},AnimationSlow,function() {
             this.remove();
         });
     });
-    /*var new_hovered_text = [];
-    $.each(current_tissue.hovered_text, function(index, text) {
-        if (!text.removed)
-            new_hovered_text.push(text);
-    });
-    current_tissue.hovered_text = new_hovered_text;*/
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Initialize the tissue: where the modules will be displayed and linked
+/** Function converting a Tissue to json
+ */
+Tissue.prototype.ToJson = function (edge_str_to_edge) {
+    var json_tissue = {cells: {}, edges: {}};
+
+    // Add the cells
+    $.each(this.cells, function(cell_id, cell) {
+        json_tissue['cells'][cell_id] = {type: cell.name, module:
+            cell.hierarchy[0], params: {}};
+    });
+
+    // Add the cell edges
+    if (typeof edge_str_to_edge == 'undefined')
+        edge_str_to_edge = {};
+    $.each(this.nodes, function(node_id, node) {
+        $.each(node.edges, function(edge_id, edge) {
+            var sametail = edge.source.cell_id + edge.source.name,
+                samehead = edge.target.cell_id + edge.target.name;
+            var edge_label = samehead + '_' + sametail;
+            edge_str_to_edge[edge_label] = edge;
+        });
+    });
+     
+    $.each(edge_str_to_edge, function(edge_label, edge) {
+        var sametail = edge.source.cell_id + edge.source.name,
+                samehead = edge.target.cell_id + edge.target.name;
+        json_tissue['edges'][edge_label] = {id_out: edge.source.cell_id,
+            io_out: edge.source.name, id_in: edge.target.cell_id,
+            io_in: edge.target.name};
+    });
+    return json_tissue;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+/** Initialize the tissue: where the cells will be displayed and linked
  */
 function EctoInitializeTissue(top, left, width) {
      MainTissue = new Tissue(top, left, width);

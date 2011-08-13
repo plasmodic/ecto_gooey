@@ -28,7 +28,7 @@ html, body, table {
     fill: red;
 }
 
-.module_center {
+.cell_center {
     fill: white;
     stroke: black;
     stroke-width: 1px;
@@ -53,8 +53,12 @@ table.parameter {
     border-collapse:collapse;
 }
 
-tr.parameter {
-    border:1px solid #000;
+tr.info_table_doc {
+    border-top:1px solid #000;
+}
+
+tr.info_table_detail {
+    border-bottom:1px solid #000;
 }
 
 
