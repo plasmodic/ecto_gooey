@@ -65,7 +65,7 @@ function DisplayParameters(cell, params) {
             table_html += '/>';
         } else {
             alert(param.type + ' type not supported, for key ' + key + '. Ask Vincent');
-            console.info(param);v
+            console.info(param);
         }
         table_html += '</td></tr>';
     });
