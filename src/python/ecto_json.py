@@ -4,45 +4,70 @@ Module detailing the different things that can be done with a JSON string
 describing a plasm.
 The JSON string is defined as follows:
 {
-    cells: {
-        cell_id:  {
-                        type:   ,
-                        module; ,
-                        parameters: {
-                            key: value,
+    "cells": {
+        "cell_id":  {
+                        "type":   ,
+                        "hierarchy": [ "module_1", "module_2" ],
+                        "parameters": {
+                            "key": value,
                             ...
                             }
                     }, ...
         },
-    edges:  {
-                edge_id :   {
-                                id_out: cell_id,
-                                io_out; io_name,
-                                id_in: cell_id,
-                                io_in; io_name,
+    "edges":  {
+                "edge_id" :   {
+                                "id_out": cell_id,
+                                "io_out": io_name,
+                                "id_in": cell_id,
+                                "io_in": io_name,
                             }, ...
             }
 }
 """
 
+import ecto
 import json
 
 def JsonToPlasm(json_plasm):
     """
     Given a json string describing a plasm, get an ecto plasm
     """
-    # TODO
-    pass
+    print json_plasm
+    json_plasm = json.loads(json_plasm)
+
+    plasm = ecto.Plasm()
+    # Create the different cells
+    cells = {}
+    for cell_id, cell_dict in json_plasm['cells'].iteritems():
+        # import the right module and its cell
+        hierarchy = '.'.join(cell_dict['hierarchy'])
+        module = __import__(hierarchy, fromlist = [cell_dict['type']]);
+        cell_creation_str = 'module.__dict__["%s"]( ' % (cell_dict['type'])
+        # deal with the parameters
+        for param, val in cell_dict['parameters'].iteritems():
+            if type(val).__name__ == 'str':
+                cell_creation_str += '%s="%s",' % (param, val)
+            else:
+                cell_creation_str += '%s=%s,' % (param, val)
+        cell_creation_str = cell_creation_str[:-1] + ')'
+        cells[cell_id] = eval(cell_creation_str)
+    print cells
+
+    # Create the different connections between the cells
+    #TODO
+    
+    return plasm
 
 def JsonToDot(json_plasm, width = None, height = None):
     """
     Given a json string describing a plasm, get the corresponding DOT format string
     """
-    json_plasm =  json.loads(json_plasm)
+    print json_plasm
+    json_plasm = json.loads(json_plasm)
     dot_graph = 'digraph dot_graph { rankdir=TD; '
     if (width and height):
         dot_graph += 'size="%d,%d";' % (width, height)
-    dot_graph += 'node [shape = circle]; dpi=100;';
+    dot_graph += 'node [shape = circle]; dpi=100;'
 
     # Add the cells
     for cell_id, cell in json_plasm['cells'].iteritems():
@@ -50,8 +75,8 @@ def JsonToDot(json_plasm, width = None, height = None):
 
     # Add the cell edges
     for edge_id, edge in json_plasm['edges'].iteritems():
-        sametail = edge['id_out'] + edge['io_out'];
-        samehead = edge['id_in'] + edge['io_in'];            
+        sametail = edge['id_out'] + edge['io_out']
+        samehead = edge['id_in'] + edge['io_in']
         dot_graph += ('%s -> %s [ arrowhead = "none", label = "%s", ' +\
             'headlabel = "%s", taillabel = "%s", samehead = "%s", ' +\
             'sametail = "%s" ];') % (edge['id_out'], edge['id_in'], edge_id,

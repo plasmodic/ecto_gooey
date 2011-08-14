@@ -32,7 +32,7 @@ function CellBase(raw_cell) {
     // This is an associative array where the key is the name of the input\
     this.inputs = {};
     this.outputs = {};
-    this.params = {};
+    this.parameters = {};
     $.each(raw_cell.inputs, function(index, input) {
         current_cell.inputs[input.name] = input;
     });
@@ -41,7 +41,7 @@ function CellBase(raw_cell) {
     });
     $.each(raw_cell.params, function(index, param) {
         param.value = undefined;
-        current_cell.params[param.name] = param;
+        current_cell.parameters[param.name] = param;
     });
 };
 
@@ -57,7 +57,7 @@ function Cell(base_cell, tissue) {
     ++Cell.prototype.id;
 
     // Copy the inputs/outputs/params
-    this.params = base_cell.params;
+    this.parameters = base_cell.parameters;
     var cell_id = this.id;
 
     this.io_nodes = {};
@@ -85,7 +85,7 @@ function Cell(base_cell, tissue) {
     
     // When we click one or the other, the displayed parameters should change
     $($(this.svg_ellipse.node)).add($(this.svg_text.svg_text.node)).click(function(e) {
-        DisplayParameters(current_cell, current_cell.params);
+        DisplayParameters(current_cell, current_cell.parameters);
     });
 };
 
@@ -115,7 +115,7 @@ Cell.prototype.toString = function() {
         message += cell.toStringHelper(output, message);
     });
     message += '</br>params: ';
-    $.each(cell.params, function(key, param) {
+    $.each(cell.parameters, function(key, param) {
         message += cell.toStringHelper(param, message);
     });
     message += '</div></br>';

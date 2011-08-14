@@ -4,7 +4,7 @@
  * @param value the value of the parameter that is modified
  */
 function UpdateParams(cell_id, name, value) {
-    MainTissue.cells[cell_id].params[name].value = value;
+    MainTissue.cells[cell_id].parameters[name].value = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ function DisplayParameters(cell, params) {
         if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
             table_html += '<input type="text" onblur="javascript:UpdateParams(' +
                 cell.id + ', \'' + param.name + '\', this.value)" ';
-            var value = cell.params[param.name].value;
+            var value = cell.parameters[param.name].value;
             if (typeof value != 'undefined')
                 table_html += 'value="' + value + '"';
             table_html += '/>';

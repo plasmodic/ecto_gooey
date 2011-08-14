@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+File creating a web server to create and execute plasms
+"""
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import json
 from os import curdir, sep
@@ -10,11 +13,26 @@ import urlparse
 import sys
 import ecto_json
 
+################################################################################
+
+class PlasmManager:
+    """
+    Class meant to be used as a global variable to execute the plasm created
+    from JSON 
+    """
+    def __init__(self):
+        self._plasm = None
+        self._sched = None
+        self._is_running = False
+
+PLASM_MANAGER = PlasmManager()
+
+################################################################################
+
 class EctoWebServer(BaseHTTPRequestHandler):
     """
     Our web server that will handle the creation/executionn of a plasm
     """
-
     def do_GET(self):
         """
         When called, give back the requested file or info
@@ -103,10 +121,8 @@ class EctoWebServer(BaseHTTPRequestHandler):
         path = urlparse.urlparse(self.path).path
         print path
 
-        if path == '/cell/graph':
+        if path == '/plasm/graph':
             # get the DOT file and convert it to SVG
-            #dot_graph = ecto_json.JsonToDot(postvars['json_plasm'][0])
-            # TODO
             json_plasm = postvars['json_plasm'][0]
             if postvars.has_key('width') and postvars.has_key('height'):
                 svg_graph = dot2svg.dot2svg(ecto_json.JsonToDot(json_plasm,
@@ -117,18 +133,28 @@ class EctoWebServer(BaseHTTPRequestHandler):
             svg_graph = svg_graph[svg_graph.find('<svg'):]
 
             self.wfile.write(svg_graph)
-        elif path == '/plasm/execute':
+        elif path == '/plasm/run':
+            PLASM_MANAGER._is_running = True
             # get the plasm as JSON and execute it
-            plasm = ecto_json.JsonToPlasm(postvars['json_plasm'][0])
+            PLASM_MANAGER._plasm = ecto_json.JsonToPlasm(
+                postvars['json_plasm'][0])
 
-            # TODO
-            
+            # Execute the plasm in a different thread
+            if PLASM_MANAGER._sched:
+                PLASM_MANAGER._sched.stop()
+            PLASM_MANAGER._sched = ecto.schedulers.Singlethreaded(
+                PLASM_MANAGER._plasm)
+            #PLASM_MANAGER._sched.execute_async()
+        elif path == '/plasm/pause':
+            PLASM_MANAGER._is_running = False
+
+################################################################################
 
 if __name__ == '__main__':
     try:
         # ecto is 3c70 in l33t, which is hexadecimal for 15472. Yeah .... sorry about that
         server = HTTPServer(('', 15472), EctoWebServer)
-        print 'started http server on http://localhost:15472/'
+        print 'started ecto web server on http://localhost:15472/'
         server.serve_forever()
     except KeyboardInterrupt:
         print '^C received, shutting down server'

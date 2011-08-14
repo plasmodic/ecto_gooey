@@ -232,7 +232,7 @@ Tissue.prototype.updateGraph = function() {
     var json_plasm = this.ToJson(edge_str_to_edge);
 
     // Ask the web server to build a new layout
-    var post_answer = $.post(EctoBaseUrl + '/cell/graph', {json_plasm:
+    var post_answer = $.post(EctoBaseUrl + '/plasm/graph', {json_plasm:
         json_plasm, width: parseInt($(this.raphael.canvas).attr('width'))/100,
         height: parseInt($(this.raphael.canvas).attr('height'))/100},
         function(data) {
@@ -303,14 +303,36 @@ Tissue.prototype.ToJson = function (edge_str_to_edge) {
     if (do_string) {
         $.each(this.cells, function(cell_id, cell) {
             json_tissue += '"' + cell_id + '":' + '{"type": "' + cell.name + 
-                '",' + '"module": "' + cell.hierarchy[0] + '", "params": {}},';
+                '", "parameters":{ ';
+            // Add the parameters
+            $.each(cell.parameters, function(key, parameter) {
+                var value = parameter.value;
+                if (typeof value == 'undefined')
+                    return;
+                if (typeof value == 'string')
+                    json_tissue += '"' + key + '": "' + value + '",';
+                else
+                    json_tissue += '"' + key + '": ' + String(value) + ',';
+            });
+            json_tissue = json_tissue.substring(0,json_tissue.length-1) + 
+                '}, "hierarchy": [ ';
+            // Add the hierarchy
+            $.each(cell.hierarchy, function(index, hierarchy) {
+                json_tissue += '"' + hierarchy + '",';
+            });
+            json_tissue = json_tissue.substring(0,json_tissue.length-1) + ']},'
         });
         json_tissue = json_tissue.substring(0,json_tissue.length-1) + '}, ' +
             '"edges": { ';
     } else {
         $.each(this.cells, function(cell_id, cell) {
             json_tissue['cells'][cell_id] = {type: cell.name, module:
-                cell.hierarchy[0], params: {}};
+                cell.hierarchy[0], parameters: {}};
+            $.each(cell.parameters, function(key, parameter) {
+                var value = parameter.value;
+                if (typeof value != 'undefined')
+                    json_tissue['cells'][cell_id]['parameters'][key] = value;
+            });
         });
     }
     
