@@ -46,16 +46,15 @@ def JsonToDot(json_plasm, width = None, height = None):
 
     # Add the cells
     for cell_id, cell in json_plasm['cells'].iteritems():
-        print cell
         dot_graph += cell_id + ' [ label = %s ];' % cell['type']
 
     # Add the cell edges
     for edge_id, edge in json_plasm['edges'].iteritems():
         sametail = edge['id_out'] + edge['io_out'];
-        samehead = edge['id_in'] + edge['io_in'];
-        dot_graph += '%s -> %s [ arrowhead = "none", label = "%s", ' +\
+        samehead = edge['id_in'] + edge['io_in'];            
+        dot_graph += ('%s -> %s [ arrowhead = "none", label = "%s", ' +\
             'headlabel = "%s", taillabel = "%s", samehead = "%s", ' +\
-            'sametail = "%s" ];' % (edge['id_out'], edge['id_in'], edge_label,
+            'sametail = "%s" ];') % (edge['id_out'], edge['id_in'], edge_id,
             edge['io_out'], edge['io_in'], samehead, sametail)
 
     dot_graph += '}'

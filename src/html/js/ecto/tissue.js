@@ -330,10 +330,10 @@ Tissue.prototype.ToJson = function (edge_str_to_edge) {
         $.each(edge_str_to_edge, function(edge_label, edge) {
             var sametail = edge.source.cell_id + edge.source.name,
                     samehead = edge.target.cell_id + edge.target.name;
-            json_tissue += '{"id_out": "' + edge.source.cell_id + '", ' +
-                '"io_out": "' + edge.source.name + '", "id_in": "' +
-                edge.target.cell_id + '", "io_in": "' + edge.target.name +
-                '"},';
+            json_tissue += '"' + edge_label + '": {"id_out": "' +
+                edge.source.cell_id + '", "io_out": "' + edge.source.name +
+                '", "id_in": "' + edge.target.cell_id + '","io_in": "' +
+                edge.target.name + '"},';
         });
         json_tissue = json_tissue.substring(0,json_tissue.length-1) + '}}';
     } else {
