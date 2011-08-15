@@ -1,0 +1,8 @@
+- add meta data to parameters:
+	- range
+	- enum
+	- sub-type (e.g. : string is file path, stringis JSON string)
+- have dynamic addition/removal of cells in ecto
+- cells in plasm need to contain the Python module they are from (is that already there ?)
+- need to be able to stop OR pause the execution of a plasm
+- has_default always true for parameters and required always false
