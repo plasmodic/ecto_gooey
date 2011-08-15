@@ -28,6 +28,17 @@ The JSON string is defined as follows:
 import ecto
 import json
 
+################################################################################
+
+def PlasmToJson(plasm):
+    """
+    Function converting a plasm to JSON (for serialization or to pass it to the
+    GUI for example
+    """
+    pass
+
+################################################################################
+
 def JsonToPlasm(json_plasm):
     """
     Given a json string describing a plasm, get an ecto plasm
@@ -54,13 +65,18 @@ def JsonToPlasm(json_plasm):
     print cells
 
     # Create the different connections between the cells
-    #TODO
+    for edge_id, edge in json_plasm['edges'].iteritems():
+        plasm.connect(cells[edge['id_out']][edge['io_out']] >>
+            cells[edge['id_in']][edge['io_in']])
     
     return plasm
 
+################################################################################
+
 def JsonToDot(json_plasm, width = None, height = None):
     """
-    Given a json string describing a plasm, get the corresponding DOT format string
+    Given a json string describing a plasm, get the corresponding DOT
+    format string
     """
     print json_plasm
     json_plasm = json.loads(json_plasm)
