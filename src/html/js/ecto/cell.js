@@ -85,7 +85,7 @@ function Cell(base_cell, tissue) {
     
     // When we click one or the other, the displayed parameters should change
     $($(this.svg_ellipse.node)).add($(this.svg_text.svg_text.node)).click(function(e) {
-        DisplayParameters(current_cell, current_cell.parameters);
+        DisplayParameters(current_cell);
     });
 };
 

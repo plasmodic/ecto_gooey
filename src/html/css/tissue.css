@@ -61,7 +61,9 @@ tr.info_table_detail {
     border-bottom:1px solid #000;
 }
 
-
+tr.info_table_required {
+    background-color:red;
+}
 
 /* The following is usefull to not select text when drawing a connection */
 ::selection {

@@ -4,7 +4,9 @@
  * @param value the value of the parameter that is modified
  */
 function UpdateParams(cell_id, name, value) {
-    MainTissue.cells[cell_id].parameters[name].value = value;
+    var cell = MainTissue.cells[cell_id];
+    cell.parameters[name].value = value;
+    DisplayParameters(cell);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,19 +45,27 @@ function CleanType(type_str) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-function DisplayParameters(cell, params) {
+function DisplayParameters(cell) {
     var cell_params = $('#cell_parameters');
 
-    // Delete the previous table
+    // Delete the previous display
     cell_params.empty();
 
     // Create a new table containing the parameters
     var table_html = '<span class="info_title">' + cell.name +
         '</span><br/><br/>' + '<span class="info_title">Parameters</span>' +
         '<table class="parameter"><tbody>';
-    $.each(params, function(key, param) {
-        table_html += '<tr class="info_table_doc"><td colspan="2">' + param.doc + '</td></tr>';
-        table_html += '<tr class="info_table_detail"><td>' + param.name + '</td><td>';
+    console.info(cell.parameters);
+    $.each(cell.parameters, function(key, param) {
+        // Deal with required parameters with no value
+        var tr_class = ''
+        if ((typeof value == 'undefined') && (param.required))
+            tr_class = ' info_table_required '
+        // Fill the rows
+        table_html += '<tr class="info_table_doc' + tr_class + '"><td ' +
+            'colspan="2">' + param.doc + '</td></tr>';
+        table_html += '<tr class="info_table_detail' + tr_class + '"><td>' +
+            param.name + '</td><td>';
         if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
             table_html += '<input type="text" onblur="javascript:UpdateParams(' +
                 cell.id + ', \'' + param.name + '\', this.value)" ';

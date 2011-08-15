@@ -13,6 +13,8 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
 
     // The list of cells building the tissue. Key:id, value: the cell
     this.cells = {};
+    // The cell that has un-filled required parameters
+    this.invalid_cell = undefined;
     // The line that is dragged from one node to the next, if any
     this.current_edge = undefined;
 
@@ -48,7 +50,7 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
         });
     // Delete what an IoNode is when the mouse is not over it
     $('#tissue .node_input,.node_output').live('mouseout', function() {
-        current_tissue.HideHoveredText(current_tissue);
+        current_tissue.HideHoveredText();
     });
 
     // Create a line when you grab an input/output node
@@ -276,16 +278,46 @@ Tissue.prototype.updateGraph = function() {
             }else {
             alert('An error happened: ' + e + ' with status ' + x.status + '.\n'+x.responseText);
             }});
+    
+    UpdatePlayerIcons();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Tissue.prototype.HideHoveredText = function (current_tissue) {
-    $.each(current_tissue.hovered_text, function(index, text) {
+Tissue.prototype.HideHoveredText = function () {
+    $.each(this.hovered_text, function(index, text) {
         text.animate({opacity:0},AnimationSlow,function() {
             this.remove();
         });
     });
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+/** Returns true if the tissue has nothing
+ */
+Tissue.prototype.IsEmpty = function () {
+    return $.isEmptyObject(this.cells);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+/** Returns true if the tissue has nothing
+ */
+Tissue.prototype.IsValid = function () {
+    // Go over each cell and figure out if all the parameters are set
+    var is_valid = true;
+    MainTissue.invalid_cell = undefined;
+    $.each(this.cells, function(cell_id, cell) {
+        $.each(cell.parameters, function(name, parameter) {
+            if (parameter.required && (typeof parameter.value == 'undefined')) {
+                is_valid = false;
+                MainTissue.invalid_cell = cell;
+                return false;
+            }
+        });
+    });
+    return is_valid;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
