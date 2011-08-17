@@ -40,7 +40,6 @@ function CellBase(raw_cell) {
         current_cell.outputs[output.name] = output;
     });
     $.each(raw_cell.params, function(index, param) {
-        param.value = undefined;
         current_cell.parameters[param.name] = param;
     });
 };
