@@ -4,6 +4,7 @@
  * @param value the value of the parameter that is modified
  */
 function UpdateParams(cell_id, name, value) {
+    // Update the values themselves
     var cell = MainTissue.cells[cell_id];
     switch (cell.parameters[name].type)
     {
@@ -16,9 +17,22 @@ function UpdateParams(cell_id, name, value) {
         case "float":
             cell.parameters[name].value = parseFloat(value);
             break;
+        case "bool":
+            console.info(value);
+            cell.parameters[name].value = value;
+            break;
         default:
     }
+    // Update what is being displayed
     DisplayParameters(cell);
+    // Let the server know about the changes
+    var json_parameter = '{"name": "' + name + '", "value":';
+    if (cell.parameters[name].type == "std::string")
+        json_parameter += '"' + value + '"';
+    else
+        json_parameter += value;
+    json_parameter += ', "cell_id": "' + cell_id + '"}';
+    $.post(EctoBaseUrl + '/plasm/update', {json_parameter: json_parameter });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -82,19 +96,32 @@ function DisplayParameters(cell) {
         if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
             table_html += '<input type="text" onblur="javascript:UpdateParams(' +
                 cell.id + ', \'' + param.name + '\', this.value)" ';
-            var value = cell.parameters[param.name].value;
-            if (typeof value != 'undefined')
-                table_html += 'value="' + value + '"';
+            var default_value = cell.parameters[param.name].value;
+            if (typeof default_value != 'undefined')
+                table_html += 'value="' + default_value + '"';
             table_html += '/>';
         } else if (param.type == "bool") {
             table_html += '<input type="checkbox" ' +
                 'onblur="javascript:UpdateParams(' +
                 cell.id + ', \'' + param.name + '\', this.value)" value="' +
                 '"';
-            var value = cell.parameters[param.name].value;
-            if ((typeof value != 'undefined') && value)
+            var default_value = cell.parameters[param.name].value;
+            if ((typeof default_value != 'undefined') && default_value)
                 table_html += ' checked ';
             table_html += '/>';
+        } else if (param.type == "enum") {
+            var default_value = cell.parameters[param.name].value;
+            table_html += '<br/>';
+            $.each(cell.parameters[param.name].values, function(index, value) {
+                table_html += '<input type="radio" ' +
+                    'onblur="javascript:UpdateParams(' +
+                    cell.id + ', \'' + param.name + '\', this.value)" value="' +
+                    value + '" id="' + param.name + '"';
+                if ((typeof default_value != 'undefined') &&
+                    (value == default_value))
+                    table_html += ' checked ';
+                table_html += '>' + value + '<br/>';
+            }); 
         } else {
             alert(param.type + ' type not supported, for key ' + key +
                 '. Ask Vincent');

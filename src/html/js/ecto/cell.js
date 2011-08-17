@@ -29,7 +29,8 @@ function CellBase(raw_cell) {
     var hierarchy = raw_cell.name.split('::');
     this.name = hierarchy.pop();
 
-    // This is an associative array where the key is the name of the input\
+    // This is an associative array where the key is the name of the input/
+    // output/params
     this.inputs = {};
     this.outputs = {};
     this.parameters = {};
@@ -56,8 +57,14 @@ function Cell(base_cell, tissue) {
     ++Cell.prototype.id;
 
     // Copy the inputs/outputs/params
-    this.parameters = base_cell.parameters;
     var cell_id = this.id;
+    this.parameters = {};
+    $.each(base_cell.parameters, function(index, param) {
+        current_cell.parameters[param.name] = {};
+        $.each(param, function(key, val) {
+            current_cell.parameters[param.name][key] = val;
+        });
+    });
 
     this.io_nodes = {};
     $.each(base_cell.inputs, function(index,input) {

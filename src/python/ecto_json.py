@@ -30,6 +30,34 @@ import json
 import types
 
 ################################################################################
+# Code taken from
+# http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-
+# unicode-ones-from-json-in-python
+# use with: object = json.loads(s, object_hook=_decode_dict)
+
+def _decode_list(lst):
+    newlist = []
+    for i in lst:
+        if isinstance(i, unicode):
+            i = i.encode('utf-8')
+        elif isinstance(i, list):
+            i = _decode_list(i)
+        newlist.append(i)
+    return newlist
+
+def _decode_dict(dct):
+    newdict = {}
+    for k, v in dct.iteritems():
+        if isinstance(k, unicode):
+            k = k.encode('utf-8')
+        if isinstance(v, unicode):
+             v = v.encode('utf-8')
+        elif isinstance(v, list):
+            v = _decode_list(v)
+        newdict[k] = v
+    return newdict
+
+################################################################################
 
 def PlasmToJson(plasm):
     """
@@ -44,6 +72,7 @@ def JsonToPlasm(json_plasm):
     """
     Given a json string describing a plasm, get an ecto plasm
     """
+    print 'The JSON strig of the plasm is:\n' + json_plasm
     json_plasm = json.loads(json_plasm)
 
     plasm = ecto.Plasm()
@@ -62,12 +91,14 @@ def JsonToPlasm(json_plasm):
                 cell_creation_str += '%s=%s,' % (param, val)
         cell_creation_str = cell_creation_str[:-1] + ')'
         cells[cell_id] = eval(cell_creation_str)
+        cells[cell_id].id = cell_id
+
 
     # Create the different connections between the cells
     for edge_id, edge in json_plasm['edges'].iteritems():
         plasm.connect(cells[edge['id_out']][str(edge['io_out'])] >>
             cells[edge['id_in']][str(edge['io_in'])])
-    
+
     return plasm
 
 ################################################################################

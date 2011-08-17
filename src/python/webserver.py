@@ -81,10 +81,9 @@ class EctoWebServer(BaseHTTPRequestHandler):
                                     # special case of an enum
                                     tendril_type = type(tendril.data().val)
                                     if 'values' in tendril_type.__dict__:
-                                        dic['value'] = '"%s"' % \
-                                            tendril.data().val
+                                        dic['value'] = str(tendril.data().val)
                                         dic['type'] = 'enum'
-                                        dic['values'] = [ '"%s"' % value
+                                        dic['values'] = [ str(value)
                                             for value in tendril_type.values ]
                                     else:
                                         dic['value'] = tendril.data().val
@@ -166,9 +165,35 @@ class EctoWebServer(BaseHTTPRequestHandler):
                 PLASM_MANAGER._plasm)
             PLASM_MANAGER._sched.execute_async()
         elif path == '/plasm/pause':
+            # TODO
             if PLASM_MANAGER._sched:
                 PLASM_MANAGER._sched.stop()
             PLASM_MANAGER._is_running = False
+        elif path == '/plasm/update':
+            if not PLASM_MANAGER._plasm:
+                return
+            # get the parameter values that got updated
+            json_parameter = json.loads(postvars['json_parameter'][0],
+                                            object_hook=ecto_json._decode_dict)
+
+            name = json_parameter['name']
+            value = json_parameter['value']
+            cell_id = json_parameter['cell_id']
+            # update the parameter of the corresponding cell
+            for cell in PLASM_MANAGER._plasm.cells():
+                if (not hasattr(cell, 'id')) or (cell.id != cell_id):
+                    continue
+                for param in cell.params:
+                    if param.key() != name:
+                        continue
+                    tendril = param.data()
+                    t = type(tendril.val)
+                    try:
+                        tendril.set(t(value))
+                    except ValueError, e:
+                        print e
+                    break
+                break
 
 ################################################################################
 
