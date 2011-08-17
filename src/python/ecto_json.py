@@ -129,20 +129,20 @@ def JsonToDot(json_plasm, width = None, height = None):
     dot_graph = 'digraph dot_graph { rankdir=TD; '
     if (width and height):
         dot_graph += 'size="%d,%d";' % (width, height)
-    dot_graph += 'node [shape = circle]; dpi=100;'
+    dot_graph += 'node [shape = circle]; dpi=100;\n'
 
     # Add the cells
     for cell_id, cell in json_plasm['cells'].iteritems():
-        dot_graph += cell_id + ' [ label = %s ];' % cell['type']
+        dot_graph += cell_id + ' [ label = "%s" ];\n' % cell['type']
 
     # Add the cell edges
     for edge_id, edge in json_plasm['edges'].iteritems():
         sametail = edge['id_out'] + edge['io_out']
         samehead = edge['id_in'] + edge['io_in']
         dot_graph += ('%s -> %s [ arrowhead = "none", label = "%s", ' +\
-            'headlabel = "%s", taillabel = "%s", samehead = "%s", ' +\
-            'sametail = "%s" ];') % (edge['id_out'], edge['id_in'], edge_id,
-            edge['io_out'], edge['io_in'], samehead, sametail)
+            'headlabel = "%s", taillabel = "%s", samehead = "head%s", ' +\
+            'sametail = "tail%s" ];\n') % (edge['id_out'], edge['id_in'],
+            edge_id, edge['io_out'], edge['io_in'], samehead, sametail)
 
     dot_graph += '}'
 
