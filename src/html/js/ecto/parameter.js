@@ -5,7 +5,19 @@
  */
 function UpdateParams(cell_id, name, value) {
     var cell = MainTissue.cells[cell_id];
-    cell.parameters[name].value = value;
+    switch (cell.parameters[name].type)
+    {
+        case "std::string":
+            cell.parameters[name].value = String(value);
+            break;
+        case "int":
+            cell.parameters[name].value = parseInt(value);
+            break;
+        case "float":
+            cell.parameters[name].value = parseFloat(value);
+            break;
+        default:
+    }
     DisplayParameters(cell);
 }
 
@@ -55,7 +67,6 @@ function DisplayParameters(cell) {
     var table_html = '<span class="info_title">' + cell.name +
         '</span><br/><br/>' + '<span class="info_title">Parameters</span>' +
         '<table class="parameter"><tbody>';
-    console.info(cell.parameters);
     $.each(cell.parameters, function(key, param) {
         // Deal with required parameters with no value
         var tr_class = ''
@@ -66,6 +77,8 @@ function DisplayParameters(cell) {
             'colspan="2">' + param.doc + '</td></tr>';
         table_html += '<tr class="info_table_detail' + tr_class + '"><td>' +
             param.name + '</td><td>';
+
+        // Deal with the different types
         if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
             table_html += '<input type="text" onblur="javascript:UpdateParams(' +
                 cell.id + ', \'' + param.name + '\', this.value)" ';
@@ -73,8 +86,18 @@ function DisplayParameters(cell) {
             if (typeof value != 'undefined')
                 table_html += 'value="' + value + '"';
             table_html += '/>';
+        } else if (param.type == "bool") {
+            table_html += '<input type="checkbox" ' +
+                'onblur="javascript:UpdateParams(' +
+                cell.id + ', \'' + param.name + '\', this.value)" value="' +
+                '"';
+            var value = cell.parameters[param.name].value;
+            if ((typeof value != 'undefined') && value)
+                table_html += ' checked ';
+            table_html += '/>';
         } else {
-            alert(param.type + ' type not supported, for key ' + key + '. Ask Vincent');
+            alert(param.type + ' type not supported, for key ' + key +
+                '. Ask Vincent');
             console.info(param);
         }
         table_html += '</td></tr>';

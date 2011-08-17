@@ -27,6 +27,7 @@ The JSON string is defined as follows:
 
 import ecto
 import json
+import types
 
 ################################################################################
 
@@ -43,7 +44,6 @@ def JsonToPlasm(json_plasm):
     """
     Given a json string describing a plasm, get an ecto plasm
     """
-    print json_plasm
     json_plasm = json.loads(json_plasm)
 
     plasm = ecto.Plasm()
@@ -56,18 +56,17 @@ def JsonToPlasm(json_plasm):
         cell_creation_str = 'module.__dict__["%s"]( ' % (cell_dict['type'])
         # deal with the parameters
         for param, val in cell_dict['parameters'].iteritems():
-            if type(val).__name__ == 'str':
+            if isinstance(val, types.StringTypes):
                 cell_creation_str += '%s="%s",' % (param, val)
             else:
                 cell_creation_str += '%s=%s,' % (param, val)
         cell_creation_str = cell_creation_str[:-1] + ')'
         cells[cell_id] = eval(cell_creation_str)
-    print cells
 
     # Create the different connections between the cells
     for edge_id, edge in json_plasm['edges'].iteritems():
-        plasm.connect(cells[edge['id_out']][edge['io_out']] >>
-            cells[edge['id_in']][edge['io_in']])
+        plasm.connect(cells[edge['id_out']][str(edge['io_out'])] >>
+            cells[edge['id_in']][str(edge['io_in'])])
     
     return plasm
 
