@@ -81,16 +81,20 @@ class EctoWebServer(BaseHTTPRequestHandler):
                                     # special case of an enum
                                     tendril_type = type(tendril.data().val)
                                     if 'values' in tendril_type.__dict__:
-                                        dic['value'] = str(tendril.data().val)
                                         dic['type'] = 'enum'
-                                        dic['values'] = [ str(value)
-                                            for value in tendril_type.values ]
+                                        dic['values'] = {}
+                                        for key, value in \
+                                            tendril_type.values.iteritems():
+                                            dic['values'][key] = str(value)
+                                            if (str(value) ==
+                                                    str(tendril.data().val)):
+                                                dic['value'] = key
+                                                break
                                     else:
                                         dic['value'] = tendril.data().val
 
                                 cell_info[property_name].append(dic)
                         cell_infos.append(cell_info)
-
             self.wfile.write(json.dumps(cell_infos))
             return
         else:

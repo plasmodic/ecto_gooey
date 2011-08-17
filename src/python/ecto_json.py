@@ -82,14 +82,30 @@ def JsonToPlasm(json_plasm):
         # import the right module and its cell
         hierarchy = '.'.join(cell_dict['hierarchy'])
         module = __import__(hierarchy, fromlist = [cell_dict['type']]);
+
+        # figure out the types of parameters of the cell, to deal with the enums
+        cell_object = eval('module.__dict__["%s"].inspect((),{})' %
+            cell_dict['type'])
+        enum_parameters = {}
+        for tendril in cell_object.params:
+            tendril_type = type(tendril.data().val)
+            if 'values' in tendril_type.__dict__:
+                enum_parameters[tendril.key()] = tendril_type.values
+
         cell_creation_str = 'module.__dict__["%s"]( ' % (cell_dict['type'])
         # deal with the parameters
         for param, val in cell_dict['parameters'].iteritems():
             if isinstance(val, types.StringTypes):
                 cell_creation_str += '%s="%s",' % (param, val)
             else:
-                cell_creation_str += '%s=%s,' % (param, val)
+                if enum_parameters.has_key(param):
+                    # if it's an enum, don't put an int but the matching enum
+                    cell_creation_str += '%s=%s,' % (param,
+                        enum_parameters[param][val])
+                else:
+                    cell_creation_str += '%s=%s,' % (param, val)
         cell_creation_str = cell_creation_str[:-1] + ')'
+        print cell_creation_str
         cells[cell_id] = eval(cell_creation_str)
         cells[cell_id].id = cell_id
 

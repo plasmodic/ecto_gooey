@@ -18,8 +18,16 @@ function UpdateParams(cell_id, name, value) {
             cell.parameters[name].value = parseFloat(value);
             break;
         case "bool":
-            console.info(value);
             cell.parameters[name].value = value;
+            break;
+        case "enum":
+            console.info(value);
+            $.each(cell.parameters[name].values, function(key, tmp_value) {
+                if (value == tmp_value) {
+                    cell.parameters[name].value = key;
+                    return false;
+                }
+            });
             break;
         default:
     }
@@ -112,13 +120,13 @@ function DisplayParameters(cell) {
         } else if (param.type == "enum") {
             var default_value = cell.parameters[param.name].value;
             table_html += '<br/>';
-            $.each(cell.parameters[param.name].values, function(index, value) {
+            $.each(cell.parameters[param.name].values, function(key, value) {
                 table_html += '<input type="radio" ' +
                     'onblur="javascript:UpdateParams(' +
                     cell.id + ', \'' + param.name + '\', this.value)" value="' +
                     value + '" id="' + param.name + '"';
                 if ((typeof default_value != 'undefined') &&
-                    (value == default_value))
+                    (key == default_value))
                     table_html += ' checked ';
                 table_html += '>' + value + '<br/>';
             }); 
