@@ -48,6 +48,20 @@ html, body, table {
     padding-bottom: 0px;
 }
 
+/** CSS for the parameter/io type */
+span.info_tendril_doc {
+    
+}
+
+span.info_tendril_name {
+    font-style: bold;
+}
+
+span.info_tendril_type {
+    color: gray;
+    font-style: italic;
+}
+
 /** CSS for the parameter table */
 table.parameter {
     border-collapse:collapse;

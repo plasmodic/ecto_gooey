@@ -52,7 +52,7 @@ function EctoInitializeParameters(top,left,width) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Function that takes a string describing the parameter/io typeas follows:
+/** Function that takes a string describing the parameter/io type as follows:
  * - remove the allocator from an std::vector
  * It also return an htmlescaped string
  */
@@ -77,6 +77,20 @@ function CleanType(type_str) {
 
     return type_str;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+/** Function that takes a tendril (io or param) and creates some HTML string
+ * describing it
+ */
+function TendrilToHtml(tendril) {
+    return '<span class="info_tendril_name">' + tendril.name + 
+            '</span> <span class="info_tendril_type">(' +
+            EscapeHtml(tendril.type) +
+            ')</span> : <span class="info_tendril_doc">' + tendril.doc +
+            '</span>';
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 function DisplayParameters(cell) {
@@ -85,78 +99,81 @@ function DisplayParameters(cell) {
     // Delete the previous display
     cell_params.empty();
 
-    // Create a new table containing the parameters
+    // Display info about the module
     cell_params.append('<br/>');
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text(cell.name));
-    cell_params.append('<br/><br/>');
+    cell_params.append('<br/>' + cell.doc + '<br/><br/>');
+    
+    // Create a new table containing the parameters
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text('Parameters'));
-    var table_html = '<table class="parameter"><tbody>';
+    var table = $('<table class="parameter"/>').append('<tbody/>');
     $.each(cell.parameters, function(key, param) {
         // Deal with required parameters with no value
         var tr_class = ''
         if ((typeof value == 'undefined') && (param.required))
             tr_class = ' info_table_required '
         // Fill the rows
-        table_html += '<tr class="info_table_doc' + tr_class + '"><td ' +
-            'colspan="2">' + param.doc + '</td></tr>';
-        table_html += '<tr class="info_table_detail' + tr_class + '"><td>' +
-            param.name + '</td><td>';
+        var row = $('<tr class="info_table_doc' + tr_class + '"/>');
+        row.append('<td>' + TendrilToHtml(param) + '<td/>');
+        table.append(row);
+        row = $('<tr class="info_table_detail' + tr_class + '"/>');
+        var td = $('<td/>');
 
         // Deal with the different types
+        var td_html;
         if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
-            table_html += '<input type="text" onblur="javascript:UpdateParams(' +
-                cell.id + ', \'' + param.name + '\', this.value)" ';
+            var td_html = '<input type="text" onblur="javascript:UpdateParams('
+                + cell.id + ', \'' + param.name + '\', this.value)" ';
             var default_value = cell.parameters[param.name].value;
             if (typeof default_value != 'undefined')
-                table_html += 'value="' + default_value + '"';
-            table_html += '/>';
+                td_html += 'value="' + default_value + '"';
+            td_html += '/>';
         } else if (param.type == "bool") {
-            table_html += '<input type="checkbox" ' +
+            td_html += '<input type="checkbox" ' +
                 'onblur="javascript:UpdateParams(' +
                 cell.id + ', \'' + param.name + '\', this.value)" value="' +
                 '"';
             var default_value = cell.parameters[param.name].value;
             if ((typeof default_value != 'undefined') && default_value)
-                table_html += ' checked ';
-            table_html += '/>';
+                td_html += ' checked ';
+            td_html += '/>';
         } else if (param.type == "enum") {
             var default_value = cell.parameters[param.name].value;
-            table_html += '<br/>';
+            td_html += '<br/>';
             $.each(cell.parameters[param.name].values, function(key, value) {
-                table_html += '<input type="radio" ' +
+                td_html += '<input type="radio" ' +
                     'onblur="javascript:UpdateParams(' +
                     cell.id + ', \'' + param.name + '\', this.value)" value="' +
                     value + '" id="' + param.name + '"';
                 if ((typeof default_value != 'undefined') &&
                     (key == default_value))
-                    table_html += ' checked ';
-                table_html += '>' + value + '<br/>';
+                    td_html += ' checked ';
+                td_html += '>' + value + '<br/>';
             }); 
         } else {
             alert(param.type + ' type not supported, for key ' + key +
                 '. Ask Vincent');
             console.info(param);
         }
-        table_html += '</td></tr>';
+        td.append(td_html);
+        row.append(td);
+        table.append(row);
     });
+    cell_params.append(table);
 
     // Create a new table containing the nodes
-    table_html += '</tbody></table><br/>';
-    cell_params.append(table_html);
+    cell_params.append('<br/>');
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text('Tendrils'));
-    table_html = '<table class="parameter"><tbody>';
+    table = $('<table class="parameter"/>').append('<tbody/>');
     $.each(cell.io_nodes, function(node_id, node) {
-        table_html += '<tr class="info_table_doc"><td colspan="2">';
-        if (node.doc == '')
-            table_html += 'no doc for tendril \"' + node.name + '\"';
-        else
-            table_html += node.doc;
-        table_html += '</td></tr><tr class="info_table_detail"><td>' + node.name + ': ' + EscapeHtml(node.type) + '</td></tr>';
+        var row = $('<tr class="info_table_doc"/>');
+        var td = row.append('<td/>');
+        td.append(TendrilToHtml(node));
+        table.append(row);
     });
 
-    table_html += '</tbody></table>';
-    cell_params.append(table_html);
+    cell_params.append(table);
 };
