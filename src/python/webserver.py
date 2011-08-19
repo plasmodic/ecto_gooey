@@ -39,7 +39,6 @@ class EctoWebServer(BaseHTTPRequestHandler):
         When called, give back the requested file or info
         """
         path = urlparse.urlparse(self.path).path
-        print path
         if path == '/cell/list':
             # list the different cells
             self.send_response(200)
@@ -101,8 +100,13 @@ class EctoWebServer(BaseHTTPRequestHandler):
             # simply send back the file that is asked for
             if path == '/':
                 path = '/index.html'
+            # TODO deal with the favicon
+            if path.endswith(".ico"):
+                path = '/image/' + path
+            print path
             try:
-                if path.endswith(".html") or path.endswith(".js") or path.endswith(".css") or path.endswith(".png"):
+                if path.endswith(".html") or path.endswith(".js") or \
+                        path[-4:] in [ ".css", ".png", ".jpg", ".ico" ]:
                     f = open(curdir + sep + '../html/' + path)
 
                     self.send_response(200)
@@ -112,6 +116,11 @@ class EctoWebServer(BaseHTTPRequestHandler):
                         self.send_header('Content-type', 'text/css')
                     elif path.endswith(".png"):
                         self.send_header('Content-type', 'image/png')
+                    elif path.endswith(".jpg"):
+                        self.send_header('Content-type', 'image/jpeg')
+                    elif path.endswith(".ico"):
+                        self.send_header('Content-type',
+                            'image/vnd.microsoft.icon')
                     else:
                         self.send_header('Content-type', 'text/html')
                     self.end_headers()
