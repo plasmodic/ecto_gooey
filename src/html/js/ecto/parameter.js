@@ -86,9 +86,13 @@ function DisplayParameters(cell) {
     cell_params.empty();
 
     // Create a new table containing the parameters
-    var table_html = '<span class="info_title">' + cell.name +
-        '</span><br/><br/>' + '<span class="info_title">Parameters</span>' +
-        '<table class="parameter"><tbody>';
+    cell_params.append('<br/>');
+    cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
+        'ui-state-default').text(cell.name));
+    cell_params.append('<br/><br/>');
+    cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
+        'ui-state-default').text('Parameters'));
+    var table_html = '<table class="parameter"><tbody>';
     $.each(cell.parameters, function(key, param) {
         // Deal with required parameters with no value
         var tr_class = ''
@@ -139,7 +143,11 @@ function DisplayParameters(cell) {
     });
 
     // Create a new table containing the nodes
-    table_html += '</tbody></table><br/><span class="info_title">Tendrils</span><table class="parameter"><tbody>';
+    table_html += '</tbody></table><br/>';
+    cell_params.append(table_html);
+    cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
+        'ui-state-default').text('Tendrils'));
+    table_html = '<table class="parameter"><tbody>';
     $.each(cell.io_nodes, function(node_id, node) {
         table_html += '<tr class="info_table_doc"><td colspan="2">';
         if (node.doc == '')
@@ -151,7 +159,4 @@ function DisplayParameters(cell) {
 
     table_html += '</tbody></table>';
     cell_params.append(table_html);
-
-    // Stylize the tables a bit
-    cell_params.children('.info_title').corner();
 };

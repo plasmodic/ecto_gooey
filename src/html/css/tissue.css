@@ -44,8 +44,8 @@ html, body, table {
     background: blue;
     padding-left: 10px;
     padding-right: 10px;
-    padding-top: 1px;
-    padding-bottom: 1px;
+    padding-top: 5px;
+    padding-bottom: 0px;
 }
 
 /** CSS for the parameter table */
