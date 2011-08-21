@@ -20,7 +20,6 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
 
     this.raphael = Raphael('main_div', tissue_width, tissue_height);
     $(this.raphael.canvas).attr('id','tissue').css({'position':'absolute', 'left':tissue_left, 'top': tissue_top});
-    this.hovered_text = [];
     this.blinking_nodes = {};
     
     // Add the icon for deleting a cell
@@ -33,24 +32,6 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
         // When clicking on the icon, delete the cell and hide the icon
         current_tissue.DeleteCell(current_tissue.hovered_cell_id);
         current_tissue.delete_icon.animate({opacity:0}, AnimationFast);
-    });
-
-    // Make sure that when you hover the inputs/outputs, you show what they are
-    $('#tissue .node_input,.node_output').live('mouseover',
-        function () {
-            var index = parseInt($(this).attr('id').substring(2));
-            var node = current_tissue.nodes[index];
-            var x = parseInt(node.svg_circle.attr('cx')),
-                y = parseInt(node.svg_circle.attr('cy'));
-
-            var text = current_tissue.raphael.text(x+20,y+20,node.name + ' : ' +
-                node.type);
-            text.node.setAttribute('class', 'hovered_text');
-            current_tissue.hovered_text.push(text);
-        });
-    // Delete what an IoNode is when the mouse is not over it
-    $('#tissue .node_input,.node_output').live('mouseout', function() {
-        current_tissue.HideHoveredText();
     });
 
     // Create a line when you grab an input/output node
@@ -281,16 +262,6 @@ Tissue.prototype.updateGraph = function() {
     
     UpdatePlayerIcons();
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-Tissue.prototype.HideHoveredText = function () {
-    $.each(this.hovered_text, function(index, text) {
-        text.animate({opacity:0},AnimationSlow,function() {
-            this.remove();
-        });
-    });
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 

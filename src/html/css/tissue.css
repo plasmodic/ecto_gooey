@@ -35,8 +35,6 @@ html, body, table {
 }
 
 .hovered_text {
-    background: blue;
-    background-color: blue;
 }
 
 /** CSS for the info section */
@@ -54,7 +52,7 @@ span.info_tendril_doc {
 }
 
 span.info_tendril_name {
-    font-style: bold;
+    font-weight: bold;
 }
 
 span.info_tendril_type {

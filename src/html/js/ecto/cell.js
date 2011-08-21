@@ -18,7 +18,8 @@ $.fn.extend({disableSelection: function() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/** A Cell is an abstract class containing info about how an ecto cell works
+/** A CellBase is an abstract base class containing info about how an ecto cell
+ * works
  */
 function CellBase(raw_cell) {
     // This is a string
@@ -28,6 +29,8 @@ function CellBase(raw_cell) {
     // Remove :: as that can be problematic for graphviz
     var hierarchy = raw_cell.name.split('::');
     this.name = hierarchy.pop();
+    // Get the doc
+    this.doc = raw_cell.doc;
 
     // This is an associative array where the key is the name of the input/
     // output/params
@@ -50,6 +53,7 @@ function CellBase(raw_cell) {
 function Cell(base_cell, tissue) {
     // This is a string
     var current_cell = this;
+    this.doc = base_cell.doc;
     this.hierarchy = base_cell.hierarchy;
     this.name = base_cell.name;
     this.id = Cell.prototype.id;
@@ -222,9 +226,6 @@ function IoNode(node_raw,io,cell_id,tissue) {
     this.edges = {};
     this.cell_id = cell_id;
     this.tissue = tissue;
-
-    // Create the text
-    this.svg_text = undefined;
     
     // Create the circle
     this.svg_circle = tissue.raphael.circle(Math.random()*tissue.width,Math.random()*tissue.height,10);
@@ -234,6 +235,39 @@ function IoNode(node_raw,io,cell_id,tissue) {
     else
         this.svg_circle.node.setAttribute("class",'node_output');
     this.svg_circle.node.id = 'io' + this.id;
+    this.text_id = undefined;
+
+    // When hovering the nodes, display the text
+    $(this.svg_circle.node).mouseover(
+        function () {
+            // in some cases (when the node moves), that function can be called
+            // and there might already be some text displayed
+            if (typeof current_io_node.text_id != 'undefined')
+                return;
+            var i = 0;
+            while ($('#hovered_text' + i).length)
+                ++i;
+            var x = parseInt(current_io_node.svg_circle.attr('cx')) +
+                    parseInt($('#tissue').css('left')),
+                y = parseInt(current_io_node.svg_circle.attr('cy')) +
+                    parseInt($('#tissue').css('top')) + 20;
+
+            // Create the div containing the shadow and everything
+            current_io_node.text_id = 'hovered_text' + i;
+            var full_div = $('<div id="' + current_io_node.text_id +
+                '"></div>');
+            full_div.append('<div class="ui-widget-overlay"></div>');
+            text = $('<div class="hovered_text ui-widget ui-widget-content ' +
+                'ui-corner-all"/>').css({position:'absolute', left: x,
+                top:y,width:300,padding:5}).append(
+                TendrilToHtml(current_io_node));
+            full_div.append(text);
+            $("#main_div").append(full_div);
+        });
+    // Delete the text when the mouse is not over it
+    $(this.svg_circle.node).mouseout(function() {
+        current_io_node.HideHoveredText();
+    });
 };
 
 IoNode.prototype.delete = function() {
@@ -242,9 +276,7 @@ IoNode.prototype.delete = function() {
         edge.delete();
     });
     
-    //TODO
-    //if (typeof this.svg_text != 'undefined')
-//    this.svg_text.animate({'opacity':0}, AnimationFast).remove();
+    this.HideHoveredText();
     
     // Delete the SVG
     this.svg_circle.animate({'opacity':0}, AnimationFast).remove();
@@ -254,9 +286,7 @@ IoNode.prototype.delete = function() {
 };
 
 IoNode.prototype.svgUpdate = function(x,y) {
-    //TODO
-    //if (typeof this.svg_text != 'undefined')
-      //  this.svg_text.animate({'x':x, 'y':y}, AnimationSlow);
+    this.HideHoveredText();
     this.svg_circle.animate({'cx':x, 'cy':y, 'opacity':1}, AnimationSlow);
     this.svg_circle.toFront();
 };
@@ -267,6 +297,17 @@ IoNode.prototype.x = function() {
 
 IoNode.prototype.y = function() {
     return parseInt(this.svg_circle.attr('cy'));
+};
+
+IoNode.prototype.HideHoveredText = function () {
+    var curr_io_node = this;
+    var text_id = this.text_id;
+    if (typeof text_id == 'undefined')
+        return;
+    $('#' + text_id).animate({opacity:0},AnimationSlow,function() {
+        $('#' + text_id).remove();
+        curr_io_node.text_id = undefined;
+    });
 };
 
 IoNode.prototype.id = 0;
