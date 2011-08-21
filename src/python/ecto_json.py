@@ -105,7 +105,6 @@ def JsonToPlasm(json_plasm):
                 else:
                     cell_creation_str += '%s=%s,' % (param, val)
         cell_creation_str = cell_creation_str[:-1] + ')'
-        print cell_creation_str
         cells[cell_id] = eval(cell_creation_str)
         cells[cell_id].id = cell_id
 
@@ -124,7 +123,6 @@ def JsonToDot(json_plasm, width = None, height = None):
     Given a json string describing a plasm, get the corresponding DOT
     format string
     """
-    print json_plasm
     json_plasm = json.loads(json_plasm)
     dot_graph = 'digraph dot_graph { rankdir=TD; '
     if (width and height):
