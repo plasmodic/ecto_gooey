@@ -1,7 +1,7 @@
 html, body, table {
     font-family: Lucida, sans-serif;
     font-size: 10pt;
-    margin: 0px 10px;
+    margin: 0px 0px;
     padding: 0px;
 }
 
@@ -63,14 +63,6 @@ span.info_tendril_type {
 /** CSS for the parameter table */
 table.parameter {
     border-collapse:collapse;
-}
-
-tr.info_table_doc {
-    border-top:1px solid #000;
-}
-
-tr.info_table_detail {
-    border-bottom:1px solid #000;
 }
 
 tr.info_table_required {

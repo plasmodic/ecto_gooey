@@ -103,22 +103,24 @@ function DisplayParameters(cell) {
     cell_params.append('<br/>');
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text(cell.name));
-    cell_params.append('<br/>' + cell.doc + '<br/><br/>');
+    cell_params.append('<br/><div class="ui-widget-content">' + cell.doc +
+        '</div><br/><br/>');
     
     // Create a new table containing the parameters
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text('Parameters'));
-    var table = $('<table class="parameter"/>').append('<tbody/>');
+    var table = $('<table class="parameter ui-widget-content"/>');
     $.each(cell.parameters, function(key, param) {
         // Deal with required parameters with no value
+        var tbody = $('<tbody class="ui-widget-content"/>');
         var tr_class = ''
         if ((typeof value == 'undefined') && (param.required))
             tr_class = ' info_table_required '
         // Fill the rows
-        var row = $('<tr class="info_table_doc' + tr_class + '"/>');
+        var row = $('<tr class="' + tr_class + '"/>');
         row.append('<td>' + TendrilToHtml(param) + '<td/>');
-        table.append(row);
-        row = $('<tr class="info_table_detail' + tr_class + '"/>');
+        tbody.append(row);
+        row = $('<tr class="' + tr_class + '"/>');
         var td = $('<td/>');
 
         // Deal with the different types
@@ -159,7 +161,9 @@ function DisplayParameters(cell) {
         }
         td.append(td_html);
         row.append(td);
-        table.append(row);
+        tbody.append(row);
+        console.info(tbody);
+        table.append(tbody);
     });
     cell_params.append(table);
 
@@ -167,9 +171,10 @@ function DisplayParameters(cell) {
     cell_params.append('<br/>');
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text('Tendrils'));
-    table = $('<table class="parameter"/>').append('<tbody/>');
+    table = $('<table class="parameter ui-widget-content"/>').append(
+        '<tbody/>');
     $.each(cell.io_nodes, function(node_id, node) {
-        var row = $('<tr class="info_table_doc"/>');
+        var row = $('<tr class="ui-widget-content"/>');
         var td = row.append('<td/>');
         td.append(TendrilToHtml(node));
         table.append(row);
