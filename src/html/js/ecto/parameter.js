@@ -109,7 +109,7 @@ function DisplayParameters(cell) {
     // Create a new table containing the parameters
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text('Parameters'));
-    var table = $('<table class="parameter ui-widget-content"/>');
+    var table = $('<table class="parameter ui-widget-content" width="100%"/>');
     $.each(cell.parameters, function(key, param) {
         // Deal with required parameters with no value
         var tbody = $('<tbody class="ui-widget-content"/>');
@@ -171,8 +171,8 @@ function DisplayParameters(cell) {
     cell_params.append('<br/>');
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text('Tendrils'));
-    table = $('<table class="parameter ui-widget-content"/>').append(
-        '<tbody/>');
+    table = $('<table class="parameter ui-widget-content" ' +
+        'width="100%"/>').append('<tbody/>');
     $.each(cell.io_nodes, function(node_id, node) {
         var row = $('<tr class="ui-widget-content"/>');
         var td = row.append('<td/>');

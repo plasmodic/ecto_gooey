@@ -304,9 +304,9 @@ IoNode.prototype.HideHoveredText = function () {
     var text_id = this.text_id;
     if (typeof text_id == 'undefined')
         return;
+    curr_io_node.text_id = undefined;
     $('#' + text_id).animate({opacity:0},AnimationSlow,function() {
         $('#' + text_id).remove();
-        curr_io_node.text_id = undefined;
     });
 };
 
