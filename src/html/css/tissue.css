@@ -34,6 +34,10 @@ html, body, table {
     stroke-width: 1px;
 }
 
+.io_edge {
+    stroke-width: 5px;
+}
+
 .hovered_text {
 }
 

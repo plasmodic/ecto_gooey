@@ -191,10 +191,10 @@ Cell.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy, rx, ry) {
     });
 };
 
-Cell.prototype.delete = function() {
+Cell.prototype.Delete = function() {
     // Delete the nodes
     $.each(this.io_nodes, function(node_id, node) {
-        node.delete();
+        node.Delete();
     });
 
     // Delete the SVG
@@ -270,10 +270,10 @@ function IoNode(node_raw,io,cell_id,tissue) {
     });
 };
 
-IoNode.prototype.delete = function() {
+IoNode.prototype.Delete = function() {
     // Delete the edges
     $.each(this.edges, function(edge_id, edge) {
-        edge.delete();
+        edge.Delete();
     });
     
     this.HideHoveredText();
@@ -336,7 +336,7 @@ function IoEdge(node_1,node_2) {
     this.target.edges[this.id] = this;
 };
 
-IoEdge.prototype.delete = function() {
+IoEdge.prototype.Delete = function() {
     delete this.source.edges[this.id];
     delete this.target.edges[this.id];
     
@@ -354,24 +354,34 @@ IoEdge.prototype.svgUpdate = function(new_svg,tissue,scale,translation_x,transla
     path.attr('opacity',0);
     path.translate(translation_x,translation_y);
     path.scale(scale,scale,0,0);
+    var path_str = path.attr('path');
     
     // Deal with the nodes
     var point_source = path.getPointAtLength(0),
-        point_target = path.getPointAtLength(path.pathLength);
+        point_target = path.getPointAtLength(path.getTotalLength());
     this.source.svgUpdate(point_source.x, point_source.y);
     this.target.svgUpdate(point_target.x, point_target.y);
-    
+    path.remove();
+
     // Deal with the path
     if (typeof this.svg_path == 'undefined') {
-      // add a new path
-        this.svg_path = tissue.raphael.path('M' + this.source.x() + ' ' + this.source.y() + 'L' + this.target.x() + ' ' + this.target.y());
+        // add a new path
+        this.svg_path = tissue.raphael.path('M' + this.source.x() + ' ' +
+            this.source.y() + 'L' + this.target.x() + ' ' + this.target.y());
         this.svg_path.toBack();
+        this.svg_path.node.setAttribute('class', 'io_edge');
     }
     // morph the old path
-    this.svg_path.animate({'path': path.attr('path'), 'opacity': 1}, AnimationSlow, function() {
-        path.remove();
-    });
+    this.svg_path.animate({'path': path_str}, AnimationSlow);
+    this.svg_path.node.id = 'io_edge' + this.id;
 };
+
+/** Return the point on the path that is half way
+ * (it has a .x and .y properties)
+ */
+IoEdge.prototype.MidPoint = function() {
+    return this.svg_path.getPointAtLength(this.svg_path.getTotalLength()/2);
+}
 
 IoEdge.prototype.id = 0;
 

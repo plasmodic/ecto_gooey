@@ -22,16 +22,7 @@ function Tissue(tissue_top,tissue_left, tissue_width, tissue_height) {
     this.blinking_nodes = {};
     
     // Add the icon for deleting a cell
-    this.delete_icon = this.raphael.image('image/trash.png', 100, 100, 32, 32);
-    this.hovered_cell_id = undefined;
-    this.delete_icon.attr('opacity',0);
-    this.delete_icon.node.setAttribute('class','trash_image');
-    this.delete_icon.toFront();
-    $(this.delete_icon.node).click(function(e) {
-        // When clicking on the icon, delete the cell and hide the icon
-        current_tissue.DeleteCell(current_tissue.hovered_cell_id);
-        current_tissue.delete_icon.animate({opacity:0}, AnimationFast);
-    });
+    this.delete_icon = new DeleteIcon(this.raphael);
 
     // Create a line when you grab an input/output node
     $('#tissue .node_input,.node_output').live('mousedown', function () {
@@ -75,17 +66,24 @@ function Tissue(tissue_top,tissue_left, tissue_width, tissue_height) {
         if ($(e.target).is('.cell_center, .trash_image, .cell_name')) {
             if ($(e.target).is('.cell_center')) {
                 // reposition the icon
-                current_tissue.hovered_cell_id =
+                var hovered_cell_id =
                     parseInt(e.target.id.substring(4));
-                var cell = current_tissue.cells[current_tissue.hovered_cell_id];
-                current_tissue.delete_icon.attr('x',
+                var cell = current_tissue.cells[hovered_cell_id];
+                current_tissue.delete_icon.Update('cell', hovered_cell_id,
                     cell.svg_text.svg_text.attr('x')+
-                    cell.svg_ellipse.attr('rx')-32).attr('y',
-                    cell.svg_text.svg_text.attr('y')-16);
-            }
-            current_tissue.delete_icon.animate({'opacity':1}, AnimationFast);
+                    cell.svg_ellipse.attr('rx')-16,
+                    cell.svg_text.svg_text.attr('y'));
+            } else
+                current_tissue.delete_icon.Show();
+        } else if ($(e.target).is('.io_edge')) {
+            var hovered_io_edge_id =
+                    parseInt(e.target.id.substring(7));
+            var mid_point = current_tissue.IoEdgeIdToIoEdge(
+                hovered_io_edge_id).MidPoint();
+            current_tissue.delete_icon.Update('io_edge', hovered_io_edge_id,
+                mid_point.x, mid_point.y);
         } else
-            current_tissue.delete_icon.animate({'opacity':0}, AnimationFast);
+            current_tissue.delete_icon.Hide();
         
         // Only do it if there is a line
         if (typeof current_tissue.current_edge != 'undefined') {
@@ -182,10 +180,15 @@ Tissue.prototype.AddCell = function(cell_name) {
 
 Tissue.prototype.DeleteCell = function(cell_id) {
     // Delete the cell
-    this.cells[cell_id].delete();
+    this.cells[cell_id].Delete();
 
-    // Hide the delete icon
-    this.delete_icon.animate({'opacity':0}, AnimationFast);
+    // Redraw everything
+    this.UpdateGraph();
+}
+
+Tissue.prototype.DeleteIoEdge = function(io_edge_id) {
+    // Delete the cell
+    this.IoEdgeIdToIoEdge(io_edge_id).Delete();
 
     // Redraw everything
     this.UpdateGraph();
@@ -371,6 +374,27 @@ Tissue.prototype.ToJson = function (edge_str_to_edge) {
     }
 
     return json_tissue;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+/** Given the id of an IoEdge, give back the IoEdge
+ */
+Tissue.prototype.IoEdgeIdToIoEdge = function(input_io_edge_id) {
+    var input_io_edge;
+    $.each(this.cells, function(cell_id, cell) {
+        $.each(cell.io_nodes, function(node_id, node) {
+            $.each(node.edges, function(io_edge_id, io_edge) {
+                if (io_edge_id == input_io_edge_id) {
+                    input_io_edge = io_edge;
+                    return false;
+                }
+            });
+        });
+        if (typeof input_io_edge != 'undefined')
+            return false;
+    });
+    return input_io_edge;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
