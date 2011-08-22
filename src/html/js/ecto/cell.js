@@ -186,7 +186,7 @@ Cell.prototype.svgUpdateUnusedIo = function(io_nodes, cx, cy, rx, ry) {
     $.each(io_nodes, function(node_id, node) {
         var angle = -node.io*io_index[node.io]*angle_step[node.io];
 
-        node.svg_circle.animate({cx:cx+radius*Math.cos(angle), cy:cy+radius*Math.sin(angle)}, AnimationSlow);
+        node.svgUpdate(cx+radius*Math.cos(angle), cy+radius*Math.sin(angle));
         io_index[node.io] += 1;
     });
 };
@@ -228,7 +228,8 @@ function IoNode(node_raw,io,cell_id,tissue) {
     this.tissue = tissue;
     
     // Create the circle
-    this.svg_circle = tissue.raphael.circle(Math.random()*tissue.width,Math.random()*tissue.height,10);
+    this.svg_circle = tissue.raphael.circle(Math.random()*tissue.width,
+                                    Math.random()*tissue.height, this.radius);
     this.svg_circle.toFront();
     if (this.io == 1)
         this.svg_circle.node.setAttribute("class",'node_input');
@@ -287,7 +288,8 @@ IoNode.prototype.Delete = function() {
 
 IoNode.prototype.svgUpdate = function(x,y) {
     this.HideHoveredText();
-    this.svg_circle.animate({'cx':x, 'cy':y, 'opacity':1}, AnimationSlow);
+    this.svg_circle.animate({'cx':x, 'cy': Math.max(this.radius,y),
+        'opacity':1}, AnimationSlow);
     this.svg_circle.toFront();
 };
 
@@ -305,12 +307,13 @@ IoNode.prototype.HideHoveredText = function () {
     if (typeof text_id == 'undefined')
         return;
     curr_io_node.text_id = undefined;
-    $('#' + text_id).animate({opacity:0},AnimationSlow,function() {
+    $('#' + text_id).animate({opacity:0}, AnimationSlow, function() {
         $('#' + text_id).remove();
     });
 };
 
 IoNode.prototype.id = 0;
+IoNode.prototype.radius = 10;
 
 ////////////////////////////////////////////////////////////////////////////////
 

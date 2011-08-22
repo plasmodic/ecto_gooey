@@ -226,24 +226,33 @@ Tissue.prototype.UpdateGraph = function() {
         var scale = parseFloat(data.attr('transform').match(scale_regex)[1]);
         var translation_regex = /translate\(([0-9]*),* ([0-9]*)\)/i;
 
-        var translation_x = parseInt(data.attr('transform').match(translation_regex)[1]),
-            translation_y = parseInt( data.attr('transform').match(translation_regex)[2]);
+        var translation_x = parseInt(data.attr('transform').match(
+                translation_regex)[1]),
+            translation_y = parseInt(data.attr('transform').match(
+                translation_regex)[2]);
 
         // Go over each node/edge, and edge to the Tissue nodes/edges
-        var edge_id_to_svg = {};
         $.each($(data), function(index, g_object) {
-            if ($(this).attr('class')=='node') {
-                var cell_id = parseInt($(this).find('title')[0].textContent);
-                // Update the SVG of the cell
-                current_tissue.cells[cell_id].svgUpdate($(this), current_tissue,
-                    scale, translation_x, translation_y);
-            } else if ($(this).attr('class')=='edge') {
-                $.each($(this).find('text'), function(text_index, text_obj) {
-                    if (text_obj.textContent in edge_str_to_edge) {
-                        edge_str_to_edge[text_obj.textContent].svgUpdate($(g_object), current_tissue, scale, translation_x, translation_y);
-                        return false;
-                    }
-                });
+            switch ($(this).attr('class')) {
+                case 'node':
+                    var cell_id = parseInt($(this).find('title'
+                        )[0].textContent);
+                    // Update the SVG of the cell
+                    current_tissue.cells[cell_id].svgUpdate($(this),
+                        current_tissue, scale, translation_x, translation_y);
+                    min_y = current_tissue.cells[cell_id].
+                    break;
+                case 'edge':
+                    $.each($(this).find('text'), function(text_index,
+                                                          text_obj) {
+                        if (text_obj.textContent in edge_str_to_edge) {
+                            edge_str_to_edge[text_obj.textContent].svgUpdate(
+                                $(g_object), current_tissue, scale,
+                                translation_x, translation_y);
+                            return false;
+                        }
+                    });
+                    break;
             }
         });
     }, 'xml')
