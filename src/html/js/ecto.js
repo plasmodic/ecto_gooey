@@ -67,5 +67,5 @@ $(window).resize( function() {
     var width = $(document).width();
     $("#main_div").css({"position":"absolute","left":width/2-MainWidth/2});
     $("#tissue")[0].setAttribute('height', Math.max(MinHeight,
-        $(document).height() - 10));
+        Math.round($(document).height() - 10)));
 });
