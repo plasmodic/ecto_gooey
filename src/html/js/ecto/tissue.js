@@ -5,9 +5,8 @@
 
 /** The class responsible for linking and displaying cells
  */ 
-function Tissue(tissue_top,tissue_left, tissue_width) {
+function Tissue(tissue_top,tissue_left, tissue_width, tissue_height) {
     var current_tissue = this;
-    var tissue_height = 600;
     // All the nodes that constitute the tissue
     this.nodes = {};
 
@@ -146,7 +145,7 @@ function Tissue(tissue_top,tissue_left, tissue_width) {
             var edge = new IoEdge(current_tissue.current_edge.first_node, node)
 
             // Update the graphical aspect
-            current_tissue.updateGraph();
+            current_tissue.UpdateGraph();
         }
 
         // Delete the line
@@ -176,7 +175,7 @@ Tissue.prototype.AddCell = function(cell_name) {
     });
 
     // Redraw everything
-    this.updateGraph();
+    this.UpdateGraph();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +188,7 @@ Tissue.prototype.DeleteCell = function(cell_id) {
     this.delete_icon.animate({'opacity':0}, AnimationFast);
 
     // Redraw everything
-    this.updateGraph();
+    this.UpdateGraph();
 }
 
 Tissue.prototype.BlinkNode = function(node) {
@@ -207,7 +206,7 @@ Tissue.prototype.BlinkNode = function(node) {
 
 /** Use graphviz to update the hierarchy of the cells
  */
-Tissue.prototype.updateGraph = function() {
+Tissue.prototype.UpdateGraph = function() {
     var current_tissue = this;
     var edge_str_to_edge = {};
 

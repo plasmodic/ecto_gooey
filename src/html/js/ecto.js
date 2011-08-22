@@ -4,6 +4,8 @@ var EctoBaseUrl = location.href.split('/', 3).join('/');
 var MainTissue;
 // The width of what the working zone should be
 var MainWidth = 1200;
+// The minimum height of the graph
+var MinHeight = 600;
 // The length, in milliseconds, of a fast animation (just like jQuery)
 var AnimationFast = 200;
 // The length, in milliseconds, of a slow animation (just like jQuery)
@@ -29,7 +31,7 @@ function EctoInitialize() {
         tissue_width = Math.max(500, MainWidth - param_width - tree_width);
     EctoInitializePlayer(tree_width);
     EctoInitializeCells(top,tree_width);
-    EctoInitializeTissue(0, tree_width, tissue_width);
+    EctoInitializeTissue(0, tree_width, tissue_width, MinHeight);
     EctoInitializeParameters(0,MainWidth-param_width, param_width);
 
     $(window).resize();
@@ -59,9 +61,11 @@ $(document).ready(function() {
     });
 });
 
-/** Function to esecute whenever the browser is resized
+/** Function to execute whenever the browser is resized
  */
 $(window).resize( function() {
     var width = $(document).width();
     $("#main_div").css({"position":"absolute","left":width/2-MainWidth/2});
+    $("#tissue")[0].setAttribute('height', Math.max(MinHeight,
+        $(document).height() - 10));
 });

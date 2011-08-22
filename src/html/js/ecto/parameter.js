@@ -103,7 +103,7 @@ function DisplayParameters(cell) {
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
         'ui-state-default').text(cell.name));
     cell_params.append('<br/><div class="ui-widget-content">' + cell.doc +
-        '</div><br/><br/>');
+        '</div><br/>');
     
     // Create a new table containing the parameters
     cell_params.append($('<span/>').addClass('info_title ui-corner-top '+
