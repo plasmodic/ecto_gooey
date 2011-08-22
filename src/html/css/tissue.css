@@ -69,6 +69,17 @@ tr.info_table_required {
     background-color:red;
 }
 
+fieldset {
+    border: none;
+    padding: 0 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+form {
+    margin-bottom: 0;
+}
+
 /* The following is usefull to not select text when drawing a connection */
 ::selection {
     background: rgb(255,255,255);

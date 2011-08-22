@@ -18,10 +18,9 @@ function UpdateParams(cell_id, name, value) {
             cell.parameters[name].value = parseFloat(value);
             break;
         case "bool":
-            cell.parameters[name].value = value;
+            cell.parameters[name].value = !cell.parameters[name].value;
             break;
         case "enum":
-            console.info(value);
             $.each(cell.parameters[name].values, function(key, tmp_value) {
                 if (value == tmp_value) {
                     cell.parameters[name].value = key;
@@ -131,10 +130,23 @@ function DisplayParameters(cell) {
             var default_value = cell.parameters[param.name].value;
             if (typeof default_value != 'undefined')
                 td_html += 'value="' + default_value + '"';
-            td_html += '/>';
+            td_html += 'class = "validate[';
+            if (param.required)
+                td_html += 'required,';
+            switch (param.type) {
+                case "int":
+                    td_html += 'custom[integer]';
+                    break;
+                case "float":
+                    td_html += 'custom[float]';
+                    break;
+                case "std::string":
+                    break;
+            }
+            td_html += '] text-input"/>';
         } else if (param.type == "bool") {
-            td_html += '<input type="checkbox" ' +
-                'onblur="javascript:UpdateParams(' +
+            td_html = '<input type="checkbox" ' +
+                'onclick="javascript:UpdateParams(' +
                 cell.id + ', \'' + param.name + '\', this.value)" value="' +
                 '"';
             var default_value = cell.parameters[param.name].value;
@@ -143,26 +155,24 @@ function DisplayParameters(cell) {
             td_html += '/>';
         } else if (param.type == "enum") {
             var default_value = cell.parameters[param.name].value;
-            td_html += '<br/>';
+            td_html = '';
             $.each(cell.parameters[param.name].values, function(key, value) {
                 td_html += '<input type="radio" ' +
-                    'onblur="javascript:UpdateParams(' +
+                    'onclick="javascript:UpdateParams(' +
                     cell.id + ', \'' + param.name + '\', this.value)" value="' +
-                    value + '" id="' + param.name + '"';
+                    value + '" name="' + param.name + '"';
                 if ((typeof default_value != 'undefined') &&
                     (key == default_value))
                     td_html += ' checked ';
                 td_html += '>' + value + '<br/>';
-            }); 
+            });
         } else {
             alert(param.type + ' type not supported, for key ' + key +
                 '. Ask Vincent');
-            console.info(param);
         }
-        td.append(td_html);
+        td.append('<form><fieldset>' + td_html + '</fieldset></form>');
         row.append(td);
         tbody.append(row);
-        console.info(tbody);
         table.append(tbody);
     });
     cell_params.append(table);
