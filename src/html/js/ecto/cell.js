@@ -330,6 +330,7 @@ function IoEdge(node_1,node_2) {
 
     this.id = IoEdge.prototype.id;
     ++IoEdge.prototype.id;
+    this.IdToIoEdge[this.id] = this;
     this.svg_text_source = undefined;
     this.svg_text_target = undefined;
     this.svg_path = undefined;
@@ -342,7 +343,8 @@ function IoEdge(node_1,node_2) {
 IoEdge.prototype.Delete = function() {
     delete this.source.edges[this.id];
     delete this.target.edges[this.id];
-    
+    delete this.IdToIoEdge[this.id];
+
     //TODO
     //this.svg_text_source.animate({'opacity':0}, AnimationFast).remove();
     //this.svg_text_target.animate({'opacity':0}, AnimationFast).remove();
@@ -387,6 +389,12 @@ IoEdge.prototype.MidPoint = function() {
 }
 
 IoEdge.prototype.id = 0;
+
+IoEdge.prototype.IdToIoEdge = {};
+
+function IoEdgeIdToIoEdge(io_edge_id) {
+    return IoEdge.prototype.IdToIoEdge[io_edge_id];
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

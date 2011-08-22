@@ -78,8 +78,7 @@ function Tissue(tissue_top,tissue_left, tissue_width, tissue_height) {
         } else if ($(e.target).is('.io_edge')) {
             var hovered_io_edge_id =
                     parseInt(e.target.id.substring(7));
-            var mid_point = current_tissue.IoEdgeIdToIoEdge(
-                hovered_io_edge_id).MidPoint();
+            var mid_point = IoEdgeIdToIoEdge(hovered_io_edge_id).MidPoint();
             current_tissue.delete_icon.Update('io_edge', hovered_io_edge_id,
                 mid_point.x, mid_point.y);
         } else
@@ -188,7 +187,7 @@ Tissue.prototype.DeleteCell = function(cell_id) {
 
 Tissue.prototype.DeleteIoEdge = function(io_edge_id) {
     // Delete the cell
-    this.IoEdgeIdToIoEdge(io_edge_id).Delete();
+    IoEdgeIdToIoEdge(io_edge_id).Delete();
 
     // Redraw everything
     this.UpdateGraph();
@@ -211,10 +210,9 @@ Tissue.prototype.BlinkNode = function(node) {
  */
 Tissue.prototype.UpdateGraph = function() {
     var current_tissue = this;
-    var edge_str_to_edge = {};
 
     // Build the dot formated string that defines the graph
-    var json_plasm = this.ToJson(edge_str_to_edge);
+    var json_plasm = this.ToJson();
 
     // Ask the web server to build a new layout
     var post_answer = $.post(EctoBaseUrl + '/plasm/graph', {json_plasm:
@@ -240,14 +238,14 @@ Tissue.prototype.UpdateGraph = function() {
                     // Update the SVG of the cell
                     current_tissue.cells[cell_id].svgUpdate($(this),
                         current_tissue, scale, translation_x, translation_y);
-                    min_y = current_tissue.cells[cell_id].
                     break;
                 case 'edge':
                     $.each($(this).find('text'), function(text_index,
                                                           text_obj) {
-                        if (text_obj.textContent in edge_str_to_edge) {
-                            edge_str_to_edge[text_obj.textContent].svgUpdate(
-                                $(g_object), current_tissue, scale,
+                        var edge = IoEdgeIdToIoEdge(parseInt(
+                            text_obj.textContent));
+                        if (typeof edge != 'undefined') {
+                            edge.svgUpdate($(g_object), current_tissue, scale,
                                 translation_x, translation_y);
                             return false;
                         }
@@ -306,7 +304,7 @@ Tissue.prototype.IsValid = function () {
 
 /** Function converting a Tissue to json
  */
-Tissue.prototype.ToJson = function (edge_str_to_edge) {
+Tissue.prototype.ToJson = function () {
     var do_string = true;
     if (do_string)
         var json_tissue = '{"cells": { ';
@@ -351,19 +349,8 @@ Tissue.prototype.ToJson = function (edge_str_to_edge) {
     }
     
     // Add the cell edges
-    if (typeof edge_str_to_edge == 'undefined')
-        edge_str_to_edge = {};
-    $.each(this.nodes, function(node_id, node) {
-        $.each(node.edges, function(edge_id, edge) {
-            var sametail = edge.source.cell_id + edge.source.name,
-                samehead = edge.target.cell_id + edge.target.name;
-            var edge_label = samehead + '_' + sametail;
-            edge_str_to_edge[edge_label] = edge;
-        });
-    });
-    
     if (do_string) {
-        $.each(edge_str_to_edge, function(edge_label, edge) {
+        $.each(IoEdge.prototype.IdToIoEdge, function(edge_label, edge) {
             var sametail = edge.source.cell_id + edge.source.name,
                     samehead = edge.target.cell_id + edge.target.name;
             json_tissue += '"' + edge_label + '": {"id_out": "' +
@@ -373,7 +360,7 @@ Tissue.prototype.ToJson = function (edge_str_to_edge) {
         });
         json_tissue = json_tissue.substring(0,json_tissue.length-1) + '}}';
     } else {
-        $.each(edge_str_to_edge, function(edge_label, edge) {
+        $.each(IoEdge.prototype.IdToIoEdge, function(edge_label, edge) {
             var sametail = edge.source.cell_id + edge.source.name,
                     samehead = edge.target.cell_id + edge.target.name;
             json_tissue['edges'][edge_label] = {id_out: edge.source.cell_id,
@@ -383,27 +370,6 @@ Tissue.prototype.ToJson = function (edge_str_to_edge) {
     }
 
     return json_tissue;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-/** Given the id of an IoEdge, give back the IoEdge
- */
-Tissue.prototype.IoEdgeIdToIoEdge = function(input_io_edge_id) {
-    var input_io_edge;
-    $.each(this.cells, function(cell_id, cell) {
-        $.each(cell.io_nodes, function(node_id, node) {
-            $.each(node.edges, function(io_edge_id, io_edge) {
-                if (io_edge_id == input_io_edge_id) {
-                    input_io_edge = io_edge;
-                    return false;
-                }
-            });
-        });
-        if (typeof input_io_edge != 'undefined')
-            return false;
-    });
-    return input_io_edge;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
