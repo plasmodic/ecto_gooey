@@ -25,7 +25,7 @@ function CellBase(raw_cell) {
     // This is a string
     var current_cell = this;
     // Strip out the hierarchy from the cell
-    this.hierarchy = raw_cell.hierarchy;
+    this.hierarchy = raw_cell.module.split('.');
     // Remove :: as that can be problematic for graphviz
     var hierarchy = raw_cell.name.split('::');
     this.name = hierarchy.pop();
@@ -441,7 +441,7 @@ function EctoInitializeCells(top, width) {
         var main_level = {cells: [], sub_levels: {}};
         $.each(data, function (index, raw_cell) {
             var current_level = main_level;
-            $.each(raw_cell.hierarchy, function (index, sub_hierarchy) {
+            $.each(raw_cell.module.split('.'), function (index, sub_hierarchy) {
                 if (!(sub_hierarchy in current_level.sub_levels)) {
                     current_level.sub_levels[sub_hierarchy] = {cells: [],
                         sub_levels: {}};

@@ -62,9 +62,27 @@ def _decode_dict(dct):
 def PlasmToJson(plasm):
     """
     Function converting a plasm to JSON (for serialization or to pass it to the
-    GUI for example
+    GUI for example)
     """
-    pass
+    plasm_dict = {'cells':{}, 'edges':{}}
+    # First process the cells
+    for cell_obj in plasm.cells():
+        cell_json = {'type': cell_obj.name().split('::')[-1], 'module':
+            cell_obj.__module__}
+        parameters = {}
+        params = cell_obj.params
+        for key, tendril in params.iteritems():
+            parameters[key] = tendril.val
+        cell_json['parameters'] = parameters
+        
+        plasm_dict['cells'][id(cell_obj)] = cell_json
+    # then process the edges
+    for connection_id, connection_tuple in enumerate(plasm.connections()):
+        plasm_dict['edges'][connection_id] = {'id_out': id(connection_tuple[0]),
+            'io_out': connection_tuple[1], 'id_in': id(connection_tuple[2]),
+            'io_in': connection_tuple[3]}
+    
+    return json.dumps(plasm_dict)
 
 ################################################################################
 

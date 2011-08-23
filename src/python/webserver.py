@@ -62,8 +62,8 @@ class EctoWebServer(BaseHTTPRequestHandler):
 
                     # loop over each cell and get info about them
                     for cell in ecto_cells:
-                        cell_info = {'name': cell.name(), 'hierarchy':
-                            [module_name,sub_module_name], 'doc':
+                        cell_info = {'name': cell.name(), 'module':
+                            '%s.%s' % (module_name,sub_module_name), 'doc':
                             cell.short_doc}
                         for property_name, property in [ ('inputs',
                             cell.inputs), ('outputs', cell.outputs), ('params',
