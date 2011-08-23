@@ -159,7 +159,8 @@ class EctoWebServer(BaseHTTPRequestHandler):
             json_plasm = postvars['json_plasm'][0]
             if postvars.has_key('width') and postvars.has_key('height'):
                 svg_graph = dot2svg.dot2svg(ecto_json.JsonToDot(json_plasm,
-                    int(postvars['width'][0]), int(postvars['height'][0])))
+                    round(float(postvars['width'][0]),0),
+                    round(float(postvars['height'][0]),0)))
             else:
                 svg_graph = dot2svg.dot2svg(ecto_json.JsonToDot(json_plasm))
 
