@@ -12,6 +12,7 @@ function UpdateParams(cell_id, name, value) {
             cell.parameters[name].value = String(value);
             break;
         case "int":
+        case "unsigned int":
             cell.parameters[name].value = parseInt(value);
             break;
         case "float":
@@ -124,7 +125,8 @@ function DisplayParameters(cell) {
 
         // Deal with the different types
         var td_html;
-        if ((param.type == "int") || (param.type == "float") || (param.type == "std::string")) {
+        if ((param.type == "int") || (param.type == "unsigned int") ||
+            (param.type == "float") || (param.type == "std::string")) {
             var td_html = '<input type="text" onblur="javascript:UpdateParams('
                 + cell.id + ', \'' + param.name + '\', this.value)" ';
             var default_value = cell.parameters[param.name].value;
@@ -135,6 +137,7 @@ function DisplayParameters(cell) {
                 td_html += 'required,';
             switch (param.type) {
                 case "int":
+                case "unsigned int":
                     td_html += 'custom[integer]';
                     break;
                 case "float":
