@@ -89,11 +89,13 @@ class EctoWebServer(BaseHTTPRequestHandler):
                                             if (str(value) ==
                                                     str(tendril.data().val)):
                                                 dic['value'] = key
-                                                break
                                     else:
                                         dic['value'] = tendril.data().val
 
                                 cell_info[property_name].append(dic)
+                                # deal with the special case of boost::python::api::object
+                                if tendril.data().type_name == 'boost::python::api::object' and dic['value'] is None:
+                                    dic['value'] = ''
                         cell_infos.append(cell_info)
             self.wfile.write(json.dumps(cell_infos))
             return

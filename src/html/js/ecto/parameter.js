@@ -9,6 +9,7 @@ function UpdateParams(cell_id, name, value) {
     switch (cell.parameters[name].type)
     {
         case "std::string":
+        case "boost::python::api::object":
             cell.parameters[name].value = String(value);
             break;
         case "int":
@@ -126,7 +127,8 @@ function DisplayParameters(cell) {
         // Deal with the different types
         var td_html;
         if ((param.type == "int") || (param.type == "unsigned int") ||
-            (param.type == "float") || (param.type == "std::string")) {
+            (param.type == "float") || (param.type == "std::string") ||
+            (param.type == "boost::python::api::object")) {
             var td_html = '<input type="text" onblur="javascript:UpdateParams('
                 + cell.id + ', \'' + param.name + '\', this.value)" ';
             var default_value = cell.parameters[param.name].value;
@@ -144,6 +146,7 @@ function DisplayParameters(cell) {
                     td_html += 'custom[float]';
                     break;
                 case "std::string":
+                case "boost::python::api::object":
                     break;
             }
             td_html += '] text-input"/>';

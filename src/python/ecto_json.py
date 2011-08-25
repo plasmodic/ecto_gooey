@@ -7,7 +7,7 @@ The JSON string is defined as follows:
     "cells": {
         "cell_id":  {
                         "type":   ,
-                        "hierarchy": [ "module_1", "module_2" ],
+                        "module": "module_1.module_2",
                         "parameters": {
                             "key": value,
                             ...
@@ -110,20 +110,20 @@ def JsonToPlasm(json_plasm):
             if 'values' in tendril_type.__dict__:
                 enum_parameters[tendril.key()] = tendril_type.values
 
-        cell_creation_str = 'module.__dict__["%s"]( ' % (cell_dict['type'])
+        params = {}
         # deal with the parameters
         for param, val in cell_dict['parameters'].iteritems():
+            param = param.encode('utf-8')
             if isinstance(val, types.StringTypes):
-                cell_creation_str += '%s="%s",' % (param, val)
+                params[param] = val.encode('utf-8')
             else:
                 if enum_parameters.has_key(param):
                     # if it's an enum, don't put an int but the matching enum
-                    cell_creation_str += '%s=%s,' % (param,
-                        enum_parameters[param][val])
+                    params[param] = enum_parameters[param][val]
                 else:
-                    cell_creation_str += '%s=%s,' % (param, val)
-        cell_creation_str = cell_creation_str[:-1] + ')'
-        cells[cell_id] = eval(cell_creation_str)
+                    params[param] = val
+        print params
+        cells[cell_id] = module.__dict__[cell_dict['type']](**params)
         cells[cell_id].id = cell_id
 
 
