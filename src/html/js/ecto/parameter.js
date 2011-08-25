@@ -37,9 +37,9 @@ function UpdateParams(cell_id, name, value) {
     // Let the server know about the changes
     var json_parameter = '{"name": "' + name + '", "value":';
     if (cell.parameters[name].type == "std::string")
-        json_parameter += '"' + value + '"';
+        json_parameter += '"' + cell.parameters[name].value + '"';
     else
-        json_parameter += value;
+        json_parameter += cell.parameters[name].value;
     json_parameter += ', "cell_id": "' + cell_id + '"}';
     $.post(EctoBaseUrl + '/plasm/update', {json_parameter: json_parameter });
 }

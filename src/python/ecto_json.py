@@ -90,7 +90,7 @@ def JsonToPlasm(json_plasm):
     """
     Given a json string describing a plasm, get an ecto plasm
     """
-    print 'The JSON strig of the plasm is:\n' + json_plasm
+    print 'The JSON string of the plasm is:\n' + json_plasm
     json_plasm = json.loads(json_plasm)
 
     plasm = ecto.Plasm()
@@ -122,7 +122,6 @@ def JsonToPlasm(json_plasm):
                     params[param] = enum_parameters[param][val]
                 else:
                     params[param] = val
-        print params
         cells[cell_id] = module.__dict__[cell_dict['type']](**params)
         cells[cell_id].id = cell_id
 
