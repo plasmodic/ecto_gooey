@@ -3,45 +3,61 @@
  * @param name the name of the parameter that is modified
  * @param value the value of the parameter that is modified
  */
-function UpdateParams(cell_id, name, value) {
+function UpdateParams(cell_id, name, input) {
     // Update the values themselves
     var cell = MainTissue.cells[cell_id];
+    var previous_value = cell.parameters[name].value,
+        new_value;
+    var value = input.value;
     switch (cell.parameters[name].type)
     {
         case "std::string":
         case "boost::python::api::object":
-            cell.parameters[name].value = String(value);
+            new_value = String(value);
             break;
         case "int":
         case "unsigned int":
-            cell.parameters[name].value = parseInt(value);
+            new_value = parseInt(value);
             break;
         case "float":
-            cell.parameters[name].value = parseFloat(value);
+            new_value = parseFloat(value);
             break;
         case "bool":
-            cell.parameters[name].value = !cell.parameters[name].value;
+            new_value = !cell.parameters[name].value;
             break;
         case "enum":
             $.each(cell.parameters[name].values, function(key, tmp_value) {
                 if (value == tmp_value) {
-                    cell.parameters[name].value = key;
+                    new_value = key;
                     return false;
                 }
             });
             break;
         default:
     }
+
     // Update what is being displayed
-    DisplayParameters(cell);
-    // Let the server know about the changes
-    var json_parameter = '{"name": "' + name + '", "value":';
-    if (cell.parameters[name].type == "std::string")
-        json_parameter += '"' + cell.parameters[name].value + '"';
+    if (isNaN(new_value))
+        input.value = '';
     else
-        json_parameter += cell.parameters[name].value;
-    json_parameter += ', "cell_id": "' + cell_id + '"}';
-    $.post(EctoBaseUrl + '/plasm/update', {json_parameter: json_parameter });
+        input.value = new_value;
+
+    if (new_value === previous_value)
+        return;
+
+    // Send the info to the server if we have new info
+    if (typeof new_value != 'undefined') {
+        cell.parameters[name].value = new_value;
+
+        // Let the server know about the changes
+        var json_parameter = '{"name": "' + name + '", "value":';
+        if (cell.parameters[name].type == "std::string")
+            json_parameter += '"' + cell.parameters[name].value + '"';
+        else
+            json_parameter += cell.parameters[name].value;
+        json_parameter += ', "cell_id": "' + cell_id + '"}';
+        $.post(EctoBaseUrl + '/plasm/update', {json_parameter: json_parameter });
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +135,7 @@ function DisplayParameters(cell) {
             tr_class = ' info_table_required '
         // Fill the rows
         var row = $('<tr class="' + tr_class + '"/>');
-        row.append('<td>' + TendrilToHtml(param) + '<td/>');
+        row.append('<td>' + TendrilToHtml(param) + '</td>');
         tbody.append(row);
         row = $('<tr class="' + tr_class + '"/>');
         var td = $('<td/>');
@@ -129,8 +145,7 @@ function DisplayParameters(cell) {
         if ((param.type == "int") || (param.type == "unsigned int") ||
             (param.type == "float") || (param.type == "std::string") ||
             (param.type == "boost::python::api::object")) {
-            var td_html = '<input type="text" onblur="javascript:UpdateParams('
-                + cell.id + ', \'' + param.name + '\', this.value)" ';
+            td_html = '<input type="text" ';
             var default_value = cell.parameters[param.name].value;
             if (typeof default_value != 'undefined')
                 td_html += 'value="' + default_value + '"';
@@ -151,10 +166,7 @@ function DisplayParameters(cell) {
             }
             td_html += '] text-input"/>';
         } else if (param.type == "bool") {
-            td_html = '<input type="checkbox" ' +
-                'onclick="javascript:UpdateParams(' +
-                cell.id + ', \'' + param.name + '\', this.value)" value="' +
-                '"';
+            td_html = '<input type="checkbox" value=""';
             var default_value = cell.parameters[param.name].value;
             if ((typeof default_value != 'undefined') && default_value)
                 td_html += ' checked ';
@@ -163,9 +175,7 @@ function DisplayParameters(cell) {
             var default_value = cell.parameters[param.name].value;
             td_html = '';
             $.each(cell.parameters[param.name].values, function(key, value) {
-                td_html += '<input type="radio" ' +
-                    'onclick="javascript:UpdateParams(' +
-                    cell.id + ', \'' + param.name + '\', this.value)" value="' +
+                td_html += '<input type="radio" value="' +
                     value + '" name="' + param.name + '"';
                 if ((typeof default_value != 'undefined') &&
                     (key == default_value))
@@ -176,7 +186,12 @@ function DisplayParameters(cell) {
             alert(param.type + ' type not supported, for key ' + key +
                 '. Ask Vincent');
         }
-        td.append('<form><fieldset>' + td_html + '</fieldset></form>');
+        var td_html_obj = $(td_html);
+        td_html_obj.keyup(function() {
+            UpdateParams(cell.id, param.name, this);
+            this.focus();
+        });
+        td.append($('<form/>').append($('<fieldset/>').append(td_html_obj)));
         row.append(td);
         tbody.append(row);
         table.append(tbody);
