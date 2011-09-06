@@ -1,8 +1,16 @@
 // File implementing the execution of a plasm
+var MainPlayer;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function UpdatePlayerIcons() {
+function Player() {
+    this.file_path = '';
+    this.plasm_name = '';
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Player.prototype.UpdateIcons = function() {
     if (MainTissue.IsValid()) {
         $('#button_play').show();
         $('#button_pause').hide();
@@ -18,8 +26,32 @@ function UpdatePlayerIcons() {
 
 /** Whenever the name of the plasm is changed, call that function
  */
-function UpdatePlasmName(plasm_name) {
-    console.info(plasm_name);
+Player.prototype.UpdatePlasmInfo = function() {
+    if (($.isEmptyObject(this.file_path)) || ($.isEmptyObject(this.plasm_name)))
+        return;
+    var post_answer = $.post(EctoBaseUrl + '/plasm/load', {file_path:
+        this.file_path, plasm_name: this.plasm_name}, function(data) {
+            MainTissue.FromJson(data)
+            MainTissue.UpdateGraph();
+        }, 'json');
+}
+
+/** Whenever the name of the plasm is changed, call that function
+ */
+Player.prototype.UpdatePlasmName = function(plasm_name) {
+    if (plasm_name == this.plasm_name)
+        return
+    this.plasm_name = plasm_name;
+    this.UpdatePlasmInfo();
+}
+
+/** Whenever the name of the plasm is changed, call that function
+ */
+Player.prototype.UpdateFilePath = function(file_path) {
+    if (file_path == this.file_path)
+        return
+    this.file_path = file_path;
+    this.UpdatePlasmInfo();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,12 +59,17 @@ function UpdatePlasmName(plasm_name) {
 /** Function to initialize the graph player on the page
  */
 function EctoInitializePlayer(width) {
+    MainPlayer = new Player();
+
     // Add the file opening section
     var open_file_section = $('<div id="open_file"></div>');
-    var file_path = $('<input type="file" name="file_path"/>');
-    
-    var plasm_name = $('plasm variable: <input type="text" onblur="javascript:UpdatePlasmName(this.value)"/>');
-    open_file_section.append(file_path).append('<br/>').append(plasm_name);
+    var file_path = $('<input type="text" name="file_path"/>').keyup(function() {
+            MainPlayer.UpdateFilePath(this.value);
+        });
+    var plasm_name = $('<input type="text"/>').keyup(function() {
+            MainPlayer.UpdatePlasmName(this.value);
+        });
+    open_file_section.append('path:').append(file_path).append('<br/>').append('variable:').append(plasm_name);
     open_file_section.hide();
     $('#player').append(open_file_section);
     
@@ -55,7 +92,7 @@ function EctoInitializePlayer(width) {
             return;
 
         $('#button_play').hide();
-        $('#button_pause').show();
+        $('#button_pause').show().css('display','inline');
 
         var json_plasm = MainTissue.ToJson();
         var post_answer = $.post(EctoBaseUrl + '/plasm/run', {json_plasm:
@@ -66,7 +103,7 @@ function EctoInitializePlayer(width) {
     // Bind the pause icon to pause the graph from Python
     $('#button_pause').click(function() {
         var tissue_json = MainTissue.ToJson();
-        $('#button_play').show();
+        $('#button_play').show().css('display','inline');
         $('#button_pause').hide();
 
         var post_answer = $.post(EctoBaseUrl + '/plasm/pause',
@@ -77,7 +114,7 @@ function EctoInitializePlayer(width) {
     // Bind the danger icon to show the problems in the graph
     $('#icon_problem').click(function() {
         var tissue_json = MainTissue.ToJson();
-        $('#button_play').show();
+        $('#button_play').show().css('display','inline');
         $('#button_pause').hide();
 
         var post_answer = $.post(EctoBaseUrl + '/plasm/pause',

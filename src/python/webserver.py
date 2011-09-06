@@ -103,7 +103,7 @@ class EctoWebServer(BaseHTTPRequestHandler):
             # simply send back the file that is asked for
             if path == '/':
                 path = '/index.html'
-            # TODO deal with the favicon
+            # deal with the favicon
             if path.endswith(".ico"):
                 path = '/image/' + path
             print path
@@ -154,11 +154,14 @@ class EctoWebServer(BaseHTTPRequestHandler):
         path = urlparse.urlparse(self.path).path
         print path
 
-        if path == '/plasm/graph':
+        if (path == '/plasm/graph'):
+            # get the SVG of a given graph (sent as JSON)
             if PLASM_MANAGER._sched:
                 PLASM_MANAGER._sched.stop()
-            # get the DOT file and convert it to SVG
+
             json_plasm = postvars['json_plasm'][0]
+
+            # convert the plasm to SVG and send it back to the GUI
             if postvars.has_key('width') and postvars.has_key('height'):
                 svg_graph = dot2svg.dot2svg(ecto_json.JsonToDot(json_plasm,
                     round(float(postvars['width'][0]),0),
@@ -169,7 +172,30 @@ class EctoWebServer(BaseHTTPRequestHandler):
             svg_graph = svg_graph[svg_graph.find('<svg'):]
 
             self.wfile.write(svg_graph)
+        elif (path == '/plasm/load'):
+            # get the SVG of a given graph (sent as JSON)
+            if PLASM_MANAGER._sched:
+                PLASM_MANAGER._sched.stop()
+
+            # load a specific plasm in a given file and send it back to the GUI
+            file_path = postvars['file_path'][0]
+            plasm_name = postvars['plasm_name'][0]
+            try:
+                import imp
+                module_file = open(file_path)
+                uploaded_module = imp.load_source('uploaded_module', file_path)
+
+                plasm = eval('uploaded_module.__dict__["%s"]' % plasm_name)
+            except Exception as inst:
+                print 'Error in loading the module path: '
+                print inst
+                return
+
+            # convert the plasm to JSON
+            json_plasm = ecto_json.PlasmToJson(plasm)
+            self.wfile.write(json_plasm)
         elif path == '/plasm/run':
+            # run a specific graph (sent as JSON)
             PLASM_MANAGER._is_running = True
             # get the plasm as JSON and execute it
             PLASM_MANAGER._plasm = ecto_json.JsonToPlasm(
@@ -182,11 +208,12 @@ class EctoWebServer(BaseHTTPRequestHandler):
                 PLASM_MANAGER._plasm)
             PLASM_MANAGER._sched.execute_async()
         elif path == '/plasm/pause':
-            # TODO
+            # stop any running plasm
             if PLASM_MANAGER._sched:
                 PLASM_MANAGER._sched.stop()
             PLASM_MANAGER._is_running = False
         elif path == '/plasm/update':
+            # update the parameters of the running plasm
             if not PLASM_MANAGER._plasm:
                 return
             # get the parameter values that got updated

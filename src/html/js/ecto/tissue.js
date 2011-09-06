@@ -7,19 +7,10 @@
  */ 
 function Tissue(tissue_top,tissue_left, tissue_width, tissue_height) {
     var current_tissue = this;
-    // All the nodes that constitute the tissue
-    this.nodes = {};
-
-    // The list of cells building the tissue. Key:id, value: the cell
-    this.cells = {};
-    // The cell that has un-filled required parameters
-    this.invalid_cell = undefined;
-    // The line that is dragged from one node to the next, if any
-    this.current_edge = undefined;
+    this.Clear();
 
     this.raphael = Raphael('main_div', tissue_width, tissue_height);
     $(this.raphael.canvas).attr('id','tissue').css({'position':'absolute', 'left':tissue_left, 'top': tissue_top});
-    this.blinking_nodes = {};
     
     // Add the icon for deleting a cell
     this.delete_icon = new DeleteIcon(this.raphael);
@@ -160,12 +151,26 @@ function Tissue(tissue_top,tissue_left, tissue_width, tissue_height) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+Tissue.prototype.Clear = function() {
+    // All the nodes that constitute the tissue
+    this.nodes = {};
+    // The list of cells building the tissue. Key:id, value: the cell
+    this.cells = {};
+    // The cell that has un-filled required parameters
+    this.invalid_cell = undefined;
+    // The line that is dragged from one node to the next, if any
+    this.current_edge = undefined;
+    this.blinking_nodes = {};
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 Tissue.prototype.AddCell = function(cell_name) {
     // Create the new cell to add to the tissue
-    var cell = new Cell(EctoCells[cell_name], this);
+    var cell = new Cell(EctoCells[cell_name], this, 0);
     var current_tissue = this;
     this.cells[cell.id] = cell;
-    
+
     // Update all the nodes
     $.each(cell.io_nodes, function(node_id, node) {
         current_tissue.nodes[node_id] = node;
@@ -269,7 +274,7 @@ Tissue.prototype.UpdateGraph = function() {
             alert('An error happened: ' + e + ' with status ' + x.status + '.\n'+x.responseText);
             }});
     
-    UpdatePlayerIcons();
+    MainPlayer.UpdateIcons();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -301,6 +306,32 @@ Tissue.prototype.IsValid = function () {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+/** Function building a tissue from a JSON object
+ */
+Tissue.prototype.FromJson = function(json_plasm) {
+    console.info(json_plasm);
+    if ($.isEmptyObject(json_plasm))
+        return;
+
+    var current_tissue = this;
+    this.Clear();
+    $.each(json_plasm['cells'], function(id, json_cell) {
+        // Create the new cell to add to the tissue
+        var cell = new Cell(EctoCells[json_cell.module + '.' + json_cell.type], current_tissue, parseInt(id));
+        current_tissue.cells[id] = cell;
+        
+        // TODO copy the parameters
+        
+        // Update all the nodes
+        $.each(cell.io_nodes, function(node_id, node) {
+            current_tissue.nodes[node_id] = node;
+        });
+    });
+    
+    // Update the graph
+    this.UpdateGraph();
+}
 
 /** Function converting a Tissue to json
  */

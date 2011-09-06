@@ -28,7 +28,8 @@ function CellBase(raw_cell) {
     this.hierarchy = raw_cell.module.split('.');
     // Remove :: as that can be problematic for graphviz
     var hierarchy = raw_cell.name.split('::');
-    this.name = hierarchy.pop();
+    this.display_name = hierarchy.pop();
+    this.unique_name = raw_cell.module + '.' + raw_cell.name;
     // Get the doc
     this.doc = raw_cell.doc;
 
@@ -50,18 +51,20 @@ function CellBase(raw_cell) {
 
 /** A Cell is an abstract class containing info about how an ecto cell works
  */
-function Cell(base_cell, tissue) {
+function Cell(base_cell, tissue, cell_id) {
     // This is a string
     var current_cell = this;
     this.doc = base_cell.doc;
     this.hierarchy = base_cell.hierarchy;
-    this.name = base_cell.name;
-    this.id = Cell.prototype.id;
+    this.display_name = base_cell.display_name;
+    this.unique_name = base_cell.unique_name;
+    // Make sure the id is free
+    while (cell_id in tissue.cells)
+        ++cell_id;
+    this.id = cell_id;
     this.tissue = tissue;
-    ++Cell.prototype.id;
 
     // Copy the inputs/outputs/params
-    var cell_id = this.id;
     this.parameters = {};
     $.each(base_cell.parameters, function(index, param) {
         current_cell.parameters[param.name] = {};
@@ -91,7 +94,7 @@ function Cell(base_cell, tissue) {
     this.svg_ellipse.node.id = 'cell' + this.id;
 
     // Create the main node text
-    this.svg_text = new CellName(this.name,tissue);
+    this.svg_text = new CellName(this.display_name,tissue);
     
     // When we click one or the other, the displayed parameters should change
     $($(this.svg_ellipse.node)).add($(this.svg_text.svg_text.node)).click(function(e) {
@@ -215,8 +218,6 @@ Cell.prototype.Delete = function() {
     // Delete it the cells from the database of cells
     delete this.tissue.cells[this.id];
 };
-
-Cell.prototype.id = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -496,15 +497,15 @@ function AddCellToTree(tree, name, level) {
     $.each(level.cells, function (index, raw_cell) {
         var cell = new CellBase(raw_cell);
         // Add the cell to the list of cells
-        EctoCells[cell.name] = cell;
+        EctoCells[cell.unique_name] = cell;
         var a = $('<li><a></a></li>');
         a.children('a')
-            .text(cell.name)
+            .text(cell.display_name)
             .addClass('ecto_cell')
-            .attr('id', 'ecto_' + cell.name)
+            .attr('id', 'ecto_' + cell.unique_name)
             .attr('href', 'javascript:void(0)')
             .click(function() {
-                MainTissue.AddCell(cell.name);
+                MainTissue.AddCell(cell.unique_name);
             });
         sub_tree.append(a);
     });
