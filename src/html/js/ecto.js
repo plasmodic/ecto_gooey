@@ -25,12 +25,11 @@ function EscapeHtml(input) {
  */
 function EctoInitialize() {
     // Figure out the width of the main components
-    var top = 40,
-        tree_width = 200,
+    var tree_width = 200,
         param_width = 300,
         tissue_width = Math.max(500, MainWidth - param_width - tree_width);
     EctoInitializePlayer(tree_width);
-    EctoInitializeCells(top,tree_width);
+    EctoInitializeCells(tree_width);
     EctoInitializeTissue(0, tree_width, tissue_width, MinHeight);
     EctoInitializeParameters(0,MainWidth-param_width, param_width);
 

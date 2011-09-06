@@ -136,14 +136,25 @@ Cell.prototype.toString = function() {
  */ 
 Cell.prototype.svgUpdate =
 function(new_svg,tissue,scale,translation_x,translation_y) {
-    var ellipse = new_svg.find('ellipse');
+    if (1) {
+        var ellipse = new_svg.find('ellipse');
 
-    // Update the main node ellipse
-    var cx = scale*(parseInt(ellipse.attr('cx')) + translation_x),
-        cy = scale*(parseInt(ellipse.attr('cy')) + translation_y),
-        rx = scale*ellipse.attr('rx'),
-        ry = scale*ellipse.attr('ry');
-    this.svg_ellipse.animate({cx: cx, cy: cy, rx: rx, ry: ry}, AnimationSlow);
+        // Update the main node ellipse
+        var cx = scale*(parseInt(ellipse.attr('cx')) + translation_x),
+            cy = scale*(parseInt(ellipse.attr('cy')) + translation_y),
+            rx = scale*ellipse.attr('rx'),
+            ry = scale*ellipse.attr('ry');
+        this.svg_ellipse.animate({cx: cx, cy: cy, rx: rx, ry: ry}, AnimationSlow);
+    } else {
+        var polygon = new_svg.find('polygon');
+
+        // Update the main node ellipse
+        var cx = scale*(parseInt(ellipse.attr('cx')) + translation_x),
+            cy = scale*(parseInt(ellipse.attr('cy')) + translation_y),
+            rx = scale*ellipse.attr('rx'),
+            ry = scale*ellipse.attr('ry');
+        this.svg_ellipse.animate({cx: cx, cy: cy, rx: rx, ry: ry}, AnimationSlow);
+    }
 
     // Update the main node text
     this.svg_text.svgUpdate(new_svg,scale,translation_x,translation_y);
@@ -432,7 +443,7 @@ function(new_svg,scale,translation_x,translation_y) {
 
 /** Get the list of cells from the server and display them as a tree
  */
-function EctoInitializeCells(top, width) {
+function EctoInitializeCells(width) {
     $('#cell_tree').html('');
 
     $.getJSON(EctoBaseUrl + '/cell/list', function(data) {
@@ -464,7 +475,7 @@ function EctoInitializeCells(top, width) {
                                });
     });
 
-    $('#cell_tree').css({'position': 'absolute', 'top': top, 'width': width});
+    $('#cell_tree').css({'width': width});
 };
 
 function AddCellToTree(tree, name, level) {
