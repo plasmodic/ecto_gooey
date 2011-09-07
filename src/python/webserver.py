@@ -4,6 +4,7 @@ File creating a web server to create and execute plasms
 """
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import json
+import importlib
 from os import curdir, sep
 import pkgutil
 import string,cgi,time
@@ -51,9 +52,8 @@ class EctoWebServer(BaseHTTPRequestHandler):
             for module_name in ['ecto_opencv']:
                 m = __import__(module_name)
                 ms = [(module_name,m)]
-                for loader, sub_module_name, is_pkg in  pkgutil.walk_packages(m.__path__):
-                    #print loader,sub_module_name,is_pkg
-                    module = loader.find_module(sub_module_name).load_module(sub_module_name)
+                for loader, sub_module_name, is_pkg in  pkgutil.walk_packages(m.__path__, module_name + '.'):
+                    module = importlib.import_module(sub_module_name)
                     ms.append((sub_module_name,module))
 
                 # list the different cells
@@ -63,8 +63,7 @@ class EctoWebServer(BaseHTTPRequestHandler):
                     # loop over each cell and get info about them
                     for cell in ecto_cells:
                         cell_info = {'name': cell.name(), 'module':
-                            '%s.%s' % (module_name,sub_module_name), 'doc':
-                            cell.short_doc}
+                            sub_module_name, 'doc': cell.short_doc}
                         for property_name, property in [ ('inputs',
                             cell.inputs), ('outputs', cell.outputs), ('params',
                             cell.params) ]:
@@ -180,12 +179,13 @@ class EctoWebServer(BaseHTTPRequestHandler):
             # load a specific plasm in a given file and send it back to the GUI
             file_path = postvars['file_path'][0]
             plasm_name = postvars['plasm_name'][0]
+
             try:
                 import imp
                 module_file = open(file_path)
                 uploaded_module = imp.load_source('uploaded_module', file_path)
 
-                plasm = eval('uploaded_module.__dict__["%s"]' % plasm_name)
+                plasm = uploaded_module.__dict__[plasm_name]
             except Exception as inst:
                 print 'Error in loading the module path: '
                 print inst

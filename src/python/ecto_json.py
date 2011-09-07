@@ -67,8 +67,9 @@ def PlasmToJson(plasm):
     plasm_dict = {'cells':{}, 'edges':{}}
     # First process the cells
     for cell_obj in plasm.cells():
+        import inspect
         cell_json = {'type': cell_obj.name(), 'module':
-            cell_obj.__module__}
+            inspect.getmodule(cell_obj).__name__}
         parameters = {}
         params = cell_obj.params
         for key, tendril in params.iteritems():
@@ -81,7 +82,8 @@ def PlasmToJson(plasm):
         plasm_dict['edges'][connection_id] = {'id_out': str(id(connection_tuple[0])),
             'io_out': connection_tuple[1], 'id_in': str(id(connection_tuple[2])),
             'io_in': connection_tuple[3]}
-    
+    print "plasm to json"
+    print json.dumps(plasm_dict)
     return json.dumps(plasm_dict)
 
 ################################################################################
