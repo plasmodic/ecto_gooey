@@ -204,7 +204,7 @@ function DisplayParameters(cell) {
         'ui-state-default').text('Tendrils'));
     table = $('<table class="parameter ui-widget-content" ' +
         'width="100%"/>').append('<tbody/>');
-    $.each(cell.io_nodes, function(node_id, node) {
+    $.each(cell.io_nodes, function(unused_node_id, node) {
         var row = $('<tr class="ui-widget-content"/>');
         var td = row.append('<td/>');
         td.append(TendrilToHtml(node));

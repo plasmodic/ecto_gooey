@@ -152,6 +152,11 @@ function Tissue(tissue_top,tissue_left, tissue_width, tissue_height) {
 ////////////////////////////////////////////////////////////////////////////////
 
 Tissue.prototype.Clear = function() {
+    var current_tissue = this;
+    if (typeof this.cells != 'undefined')
+        $.each(this.cells, function(cell_id, cell) {
+            current_tissue.cells[cell_id].Delete();
+        });
     // All the nodes that constitute the tissue
     this.nodes = {};
     // The list of cells building the tissue. Key:id, value: the cell
@@ -173,7 +178,7 @@ Tissue.prototype.AddCell = function(cell_name) {
 
     // Update all the nodes
     $.each(cell.io_nodes, function(node_id, node) {
-        current_tissue.nodes[node_id] = node;
+        current_tissue.nodes[node.id] = node;
     });
 
     // Redraw everything
@@ -310,25 +315,35 @@ Tissue.prototype.IsValid = function () {
 /** Function building a tissue from a JSON object
  */
 Tissue.prototype.FromJson = function(json_plasm) {
-    console.info(json_plasm);
     if ($.isEmptyObject(json_plasm))
         return;
 
     var current_tissue = this;
     this.Clear();
+
+    // Create new cells
     $.each(json_plasm['cells'], function(id, json_cell) {
         // Create the new cell to add to the tissue
         var cell = new Cell(EctoCells[json_cell.module + '.' + json_cell.type], current_tissue, parseInt(id));
-        current_tissue.cells[id] = cell;
         
-        // TODO copy the parameters
+        // copy the parameters
+        $.each(cell.parameters, function(parameter_name, unused_value) {
+            cell.parameters[parameter_name].value = json_cell.parameters[parameter_name];
+        });
+        current_tissue.cells[id] = cell;
         
         // Update all the nodes
         $.each(cell.io_nodes, function(node_id, node) {
-            current_tissue.nodes[node_id] = node;
+            current_tissue.nodes[node.id] = node;
         });
     });
-    
+
+    // Create new connections
+    $.each(json_plasm['edges'], function(index, edge) {
+        // Create the new cell to add to the tissue
+        var edge = new IoEdge(current_tissue.cells[parseInt(edge.id_in)].io_nodes[edge.io_in], current_tissue.cells[parseInt(edge.id_out)].io_nodes[edge.io_out]);
+    });
+
     // Update the graph
     this.UpdateGraph();
 }
@@ -345,7 +360,7 @@ Tissue.prototype.ToJson = function () {
     // Add the cells
     if (do_string) {
         $.each(this.cells, function(cell_id, cell) {
-            json_tissue += '"' + cell_id + '":' + '{"type": "' + cell.name + 
+            json_tissue += '"' + cell_id + '":' + '{"type": "' + cell.display_name + 
                 '", "parameters":{ ';
             // Add the parameters
             $.each(cell.parameters, function(key, parameter) {

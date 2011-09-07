@@ -76,12 +76,12 @@ function Cell(base_cell, tissue, cell_id) {
     this.io_nodes = {};
     $.each(base_cell.inputs, function(index,input) {
         var node = new IoNode(input,1,cell_id,tissue);
-        current_cell.io_nodes[node.id] = node;
+        current_cell.io_nodes[node.name] = node;
     });
 
     $.each(base_cell.outputs, function(index,output) {
         var node = new IoNode(output,-1,cell_id,tissue);
-        current_cell.io_nodes[node.id] = node;
+        current_cell.io_nodes[node.name] = node;
     });
 
     // Create the main node ellipse
@@ -166,7 +166,7 @@ function(new_svg,tissue,scale,translation_x,translation_y) {
     var unused_io_nodes = {};
     $.each(this.io_nodes, function(node_id, node) {
         if ($.isEmptyObject(node.edges))
-            unused_io_nodes[node_id] = node;
+            unused_io_nodes[node.id] = node;
     });
     this.svgUpdateUnusedIo(unused_io_nodes, cx, cy, rx, ry);
 };
