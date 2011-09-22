@@ -74,14 +74,17 @@ function Cell(base_cell, tissue, cell_id) {
     });
 
     this.io_nodes = {};
+    var node_id = 0;
     $.each(base_cell.inputs, function(index,input) {
         var node = new IoNode(input,1,cell_id,tissue);
-        current_cell.io_nodes[node.name] = node;
+        current_cell.io_nodes[node_id] = node;
+        ++node_id;
     });
 
     $.each(base_cell.outputs, function(index,output) {
         var node = new IoNode(output,-1,cell_id,tissue);
-        current_cell.io_nodes[node.name] = node;
+        current_cell.io_nodes[node_id] = node;
+        ++node_id;
     });
 
     // Create the main node ellipse
