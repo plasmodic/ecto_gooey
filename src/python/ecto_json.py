@@ -125,8 +125,7 @@ def JsonToPlasm(json_plasm):
                 else:
                     params[param] = val
         cells[cell_id] = module.__dict__[cell_dict['type']](**params)
-        cells[cell_id].id = cell_id
-
+        cells[cell_id].__impl.id = cell_id
 
     # Create the different connections between the cells
     for edge_id, edge in json_plasm['edges'].iteritems():
