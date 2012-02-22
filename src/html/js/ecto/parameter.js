@@ -41,6 +41,7 @@ function UpdateParams(cell_id, name, input) {
         input.value = '';
     else
         input.value = new_value;
+    input.value = new_value;
 
     if (new_value === previous_value)
         return;

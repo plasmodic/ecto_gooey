@@ -5,7 +5,7 @@ describing a plasm.
 The JSON string is defined as follows:
 {
     "cells": {
-        "cell_id":  {
+        cell_id:  {
                         "type":   ,
                         "module": "module_1.module_2",
                         "parameters": {

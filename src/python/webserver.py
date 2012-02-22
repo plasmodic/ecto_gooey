@@ -49,12 +49,16 @@ class EctoWebServer(BaseHTTPRequestHandler):
             # List the different shared object of ecto_opencv
             # TODO ls of sys.path for ecto_*.so ?
             cell_infos = []
+            import os
             for module_name in ['ecto_opencv']:
                 m = __import__(module_name)
                 ms = [(module_name,m)]
                 for loader, sub_module_name, is_pkg in  pkgutil.walk_packages(m.__path__, module_name + '.'):
-                    module = importlib.import_module(sub_module_name)
-                    ms.append((sub_module_name,module))
+                    try:
+                        module = importlib.import_module(sub_module_name)
+                        ms.append((sub_module_name,module))
+                    except:
+                        pass
 
                 # list the different cells
                 for sub_module_name,x in ms:
@@ -96,7 +100,11 @@ class EctoWebServer(BaseHTTPRequestHandler):
                                 # deal with the special case of boost::python::api::object
                                 if tendril.data().type_name == 'boost::python::api::object' and dic['value'] is None:
                                     dic['value'] = ''
-                        cell_infos.append(cell_info)
+                        try:
+                            json.dumps(cell_info)
+                            cell_infos.append(cell_info)
+                        except:
+                            pass
             self.wfile.write(json.dumps(cell_infos))
             return
         else:
