@@ -213,9 +213,7 @@ class EctoWebServer(BaseHTTPRequestHandler):
             # Execute the plasm in a different thread
             if PLASM_MANAGER._sched:
                 PLASM_MANAGER._sched.stop()
-            PLASM_MANAGER._sched = ecto.schedulers.Singlethreaded(
-                PLASM_MANAGER._plasm)
-            PLASM_MANAGER._sched.execute_async()
+            PLASM_MANAGER._plasm.execute(0)
         elif path == '/plasm/pause':
             # stop any running plasm
             if PLASM_MANAGER._sched:
